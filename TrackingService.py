@@ -179,12 +179,15 @@ class TrackingService:
   """
   def transformationDataDeepSort(self, results, img):
     detection = []
+    embeds = []
     frame = cv2.imread(img)
     for result in results:
         detection.append([result[0], result[2], result[3], result[4]])
+        embeds.append(result[4])
     return {
       "detections": detection,
-      "frame": frame
+      "frame": frame,
+      "embeds":embeds
     }
 
   def transformationDataDeepSortRoot(self, results, img):
@@ -238,7 +241,7 @@ class TrackingService:
   def trackingDataObject(self, detections):
     # detections['detections'] = self.filterDetections(detections['detections'])
     if self.type_model == "DeepSort":
-      tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
+      tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds =detections['embeds'])
       return self.transformTrackingDeepSort(tracking)
     if self.type_model == "StrongSort":
       return self.model.update(dets = detections['detections'], ori_img = detections['frame'])

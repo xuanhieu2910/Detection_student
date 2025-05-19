@@ -4,7 +4,7 @@ import BodyPoseService as bps
 import DetectorService as ds
 import FacialService as fs
 import TrackingService as ts
-import ComparetiveService as cs
+# import ComparetiveService as cs
 import torch
 import time
 
@@ -30,7 +30,7 @@ def main():
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
 
-    modelCompare = cs.ComparetiveService()
+    # modelCompare = cs.ComparetiveService()
 
 
     imgs = loadDataset()
@@ -48,10 +48,23 @@ def main():
 
 
         detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+        print("Detected filtered: ")
+        for de in detectionsTransform:
+            print(f"Detection: {de[0]} - {de[4]}")
+
+
+
         if (len(detectionsFilter["detections_max_age"]) > 0):
             trackingModel.update(detectionsFilter["detections_max_age"], img)
+
         if (len(detectionsFilter["detections_un_matched"]) > 0):
             trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
+
+
+            print("Trackings: ")
+            for track in trackings:
+                print(f"Track: {track[0]} - {track[4]}")
+
             trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
 
 

@@ -7,10 +7,10 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-
-TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = pkg_resources.resource_filename(
-   "deep_sort_real_time", "embedder/weights/osnet_ain_ms_d_c_wtsonly.pth"
-)
+#
+# TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = pkg_resources.resource_filename(
+#    "deep_sort_real_time", "embedder/weights/osnet_ain_ms_d_c_wtsonly.pth"
+# )
 
 INPUT_WIDTH = 224
 
@@ -43,7 +43,7 @@ class TorchReID_Embedder(object):
             raise Exception('ImportError: torchreid is not installed, please install and try again or choose another embedder')
         import os
         import sys
-        sys.path.append(os.path.abspath("\\..\\..\\..\\..\\torchreid\\torchreid"))
+        sys.path.append(os.path.abspath("torchreid\\torchreid"))
         from torchreid.reid.utils import FeatureExtractor
 
         if model_name is None:
@@ -52,8 +52,8 @@ class TorchReID_Embedder(object):
         if model_wts_path is None:
             model_wts_path = ''
 
-        if model_name=='osnet_ain_x1_0' and model_wts_path=='':
-            model_wts_path = TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS
+        # if model_name=='osnet_ain_x1_0' and model_wts_path=='':
+        #     model_wts_path = TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS
 
         self.gpu = gpu and torch.cuda.is_available()
         if self.gpu:

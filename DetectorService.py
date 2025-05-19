@@ -79,7 +79,6 @@ class DetectorService:
 
   def to_extraction(self, xyxy, frame):
       imgCrop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
-      print(f"Custom - {imgCrop}")
       return self.modelExtraction.extraction_feature(np_images = imgCrop)
 
   def removeDuplicate(self, detections):

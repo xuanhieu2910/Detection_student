@@ -6,6 +6,7 @@ import load_config as config
 
 
 class ExtractionFeatureService:
+
     def __init__(self):
         self.model = self.initExtractionFeatureModel()
 

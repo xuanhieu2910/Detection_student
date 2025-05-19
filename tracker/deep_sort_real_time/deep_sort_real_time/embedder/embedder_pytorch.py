@@ -12,13 +12,16 @@ from .mobilenetv2_bottle import MobileNetV2_bottle
 
 logger = logging.getLogger(__name__)
 
-MOBILENETV2_BOTTLENECK_WTS = pkg_resources.resource_filename(
-    "deep_sort_real_time", "embedder/weights/mobilenetv2_bottleneck_wts.pt"
-)
+# MOBILENETV2_BOTTLENECK_WTS = pkg_resources.resource_filename(
+#     "deep_sort_real_time", "embedder/weights/mobilenetv2_bottleneck_wts.pt"
+# )
+MOBILENETV2_BOTTLENECK_WTS = "C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\tracker\\deep_sort_real_time\\deep_sort_real_time\\embedder\\weights\\mobilenetv2_bottleneck_wts.pt"
 
-TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = pkg_resources.resource_filename(
-   "deep_sort_real_time", "embedder/weights/osnet_ain_ms_d_c_wtsonly.pth"
-)
+# TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = pkg_resources.resource_filename(
+#    "deep_sort_real_time", "embedder/weights/osnet_ain_ms_d_c_wtsonly.pth"
+# )
+
+TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = None
 
 INPUT_WIDTH = 224
 
@@ -217,7 +220,6 @@ class TorchReID_Embedder(object):
         return np_image_rgb
 
     def predict(self, np_images):
-        print(f"ROOT : {np_images[0]}")
         """
         batch inference
 

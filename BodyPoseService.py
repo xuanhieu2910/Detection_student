@@ -1,7 +1,7 @@
 import pandas as pd
 import os
 import sys
-sys.path.append(os.path.abspath("body_pose\\openposeBodyCustom\\openpose_pytorch"))
+sys.path.append(os.path.abspath("body_pose\\openposeBodyCustom"))
 from openpose_pytorch import torch_openpose
 import cv2
 import torch

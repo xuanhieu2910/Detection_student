@@ -320,7 +320,7 @@ class TrackingService:
   def transformTrackingDeepSort(self, resultsTracking):
     trackings = []
     for results in resultsTracking:
-      trackings.append([results.to_tlwh(),results.track_id, results.is_confirmed(), results.age])
+      trackings.append([results.to_tlwh(),results.track_id, results.is_confirmed(), results.age, results.features])
     return self.toSort(trackings)
 
   def toSort(self, trackings):

@@ -1,18 +1,9 @@
 import sys
 import os
-from convert_detection import to_xyxy
+
 sys.path.append(os.path.abspath("detector_tracker"))
 from ultralytics import YOLO
-import torch
-import cv2
-import pandas as pd
-import time
-import dectection_evaluation as deval
 import load_config as config
-import numpy as np
-import tracker_custom as tracker_custom
-import convert_detection as convertDetection
-import time
 import ExtractionFeatureService as efs
 import ComparetiveService as compares
 

@@ -80,3 +80,9 @@ feature-extraction:
 comparative:
   metric : cosine
   distance_match : 0.2
+
+#########################################################################################################################################
+# Config body pose
+body-pose:
+  model_type : body_25
+  model_path : body_pose\\openposeBodyCustom\\model\\body_25.pth

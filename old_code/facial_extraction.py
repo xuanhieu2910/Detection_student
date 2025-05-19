@@ -1,13 +1,11 @@
 import os
-import sys
 from feat.detector import Detector
 import cv2
 import pandas as pd
 import load_config as config
 import dectection_evaluation as deval
-import body_pose_extraction as bodyPoseExtraction
+from old_code import body_pose_extraction as bodyPoseExtraction
 import handle_label as handleLabel
-import matplotlib.pyplot as plt
 
 pathRootDataset = "/content/drive/MyDrive/Research/Computer_Vision/StudentEngagement_2/dataset/CSSBD/Test"
 pathFileWriteData = "/content/drive/MyDrive/Research/Computer_Vision/StudentEngagement_2/runs/facial/Test_03_05_2025.csv"

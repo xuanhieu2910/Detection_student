@@ -1,13 +1,7 @@
-import os
-import sys
 from feat.detector import Detector
 import cv2
 import pandas as pd
 import load_config as config
-import dectection_evaluation as deval
-import body_pose_extraction as bodyPoseExtraction
-import handle_label as handleLabel
-import matplotlib.pyplot as plt
 
 
 class FacialService:

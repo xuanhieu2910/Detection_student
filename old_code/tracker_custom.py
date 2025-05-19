@@ -5,11 +5,11 @@ import tracker_evaluation as tracker_evaluation
 from tracker.deepsort.deepsort.tracker import DeepSortTracker
 from tracker.deepsort.deepsort.detection import Detection
 import numpy as np
-sys.path.append(os.path.abspath("tracker\\deep_sort_real_time"))
+sys.path.append(os.path.abspath("../tracker/deep_sort_real_time"))
 from tracker.deep_sort_real_time.deep_sort_real_time.deepsort_tracker import DeepSort
-sys.path.append(os.path.abspath("tracker\\strongsort\\strongsort"))
+sys.path.append(os.path.abspath("../tracker/strongsort/strongsort"))
 from tracker.strongsort.strongsort.strong_sort import StrongSORT
-sys.path.append(os.path.abspath("detector_tracker\\ultralytics\\trackers"))
+sys.path.append(os.path.abspath("../detector_tracker/ultralytics/trackers"))
 from detector_tracker.ultralytics.trackers.byte_tracker import BYTETracker
 from detector_tracker.ultralytics.trackers.bot_sort import BOTSORT
 import argparse

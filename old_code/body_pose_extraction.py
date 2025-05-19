@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.abspath("body_pose\\openposeBodyCustom"))
+sys.path.append(os.path.abspath("../body_pose/openposeBodyCustom"))
 import cv2
 import torch
 import time

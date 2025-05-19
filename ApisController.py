@@ -21,16 +21,21 @@ def loadDataset():
 def main():
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker", "BotSort"]
     """"
-  BotSort tam thoi dung lai, can phai xem lai BotSort
-  """
+      BotSort tam thoi dung lai, can phai xem lai BotSort
+    """
     # initialize
     detectionModel = ds.DetectorService("C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\yolov5nu.pt")
     trackingModel = ts.TrackingService("DeepSort")
+
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
+
     modelCompare = cs.ComparetiveService()
+
+
     imgs = loadDataset()
     time_start = time.time()
+
     for img in imgs:
         results = detectionModel.predict(img)
 

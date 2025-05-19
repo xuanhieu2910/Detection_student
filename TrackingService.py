@@ -1,5 +1,8 @@
 import sys
 import os
+
+import numpy as np
+
 import load_config as config
 
 sys.path.append(os.path.abspath("\\tracker\\deep_sort_real_time"))
@@ -187,7 +190,7 @@ class TrackingService:
     return {
       "detections": detection,
       "frame": frame,
-      "embeds":embeds
+      "embeds":np.array(embeds)
     }
 
   def transformationDataDeepSortRoot(self, results, img):
@@ -241,7 +244,7 @@ class TrackingService:
   def trackingDataObject(self, detections):
     # detections['detections'] = self.filterDetections(detections['detections'])
     if self.type_model == "DeepSort":
-      tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds =detections['embeds'])
+      tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
       return self.transformTrackingDeepSort(tracking)
     if self.type_model == "StrongSort":
       return self.model.update(dets = detections['detections'], ori_img = detections['frame'])

@@ -1,0 +1,9 @@
+pip install pyyaml
+pip install torchreid
+pip uninstall scipy
+pip install scipy==1.13.1
+pip install skops
+pip install nltools
+pip install av
+pip install kornia
+pip install numpy==1.25.0

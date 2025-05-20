@@ -35,16 +35,31 @@ class DetectorService:
   """
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
+
   def transformResults(self, detections, frame):
       results = []
+      crops = []
+      xyxy_list = []
+
       for detection in detections:
-          for i in detection.boxes:
-            xyxy = self.to_xyxy(i)
-            xywh = self.to_xywh(i)
-            conf = self.to_conf(i)
-            cls = self.to_cls(i)
-            extract = self.to_extraction(xyxy,frame)
-            results.append([xyxy,xywh,conf,cls,extract.tolist(),0,0])
+          for box in detection.boxes:
+              xyxy = self.to_xyxy(box)
+              xywh = self.to_xywh(box)
+              conf = self.to_conf(box)
+              cls = self.to_cls(box)
+
+              # Lưu thông tin crop để xử lý batch sau
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+              xyxy_list.append((xyxy, xywh, conf, cls))
+
+      # Chạy batch extraction một lần duy nhất
+      features = self.modelExtraction.extraction_feature(np_images=crops)
+
+      # Gộp kết quả
+      for (xyxy, xywh, conf, cls), feat in zip(xyxy_list, features):
+          results.append([xyxy, xywh, conf, cls, feat, 0, 0])
+
       return self.toSort(results)
 
   def transformResultsRoot(self, detections, frame):

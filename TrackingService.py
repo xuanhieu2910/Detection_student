@@ -186,12 +186,11 @@ class TrackingService:
     frame = cv2.imread(img)
     for result in results:
         detection.append([result[0], result[2], result[3], result[4]])
-        embeds += result[4]
+        embeds.append(result[4])
     return {
       "detections": detection,
       "frame": frame,
       "embeds":embeds
-      # "embeds":embeds
     }
 
   def transformationDataDeepSortRoot(self, results, img):
@@ -299,13 +298,10 @@ class TrackingService:
         else:
           detectionStore[6] += 1
 
-
-
-
     for detection in detections:
       matched = False
       for detectionStore in self.DETECTIONS_STORES:
-        if self.comparativeService.is_matched(torch.tensor(detection[4]), detectionStore[4]):
+        if self.comparativeService.is_matched(torch.tensor(np.array(detection[4])).unsqueeze(0), torch.tensor(np.array(detectionStore[4])).unsqueeze(0)):
           detection[5] = detectionStore[5]
           matched = True
           break

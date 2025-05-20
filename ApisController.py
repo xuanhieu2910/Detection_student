@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test2"
+    pathRootDataset = "dataset\\CBBDS"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -35,26 +35,23 @@ def main():
 
     imgs = loadDataset()
     time_start = time.time()
-
+    index = 1
     for img in imgs:
         results = detectionModel.predict(img)
 
-        trackingModel.trackingDataObjectRoot(trackingModel.transformationDataDeepSortRoot(results, img))
+        # trackingModel.trackingDataObjectRoot(trackingModel.transformationDataDeepSortRoot(results, img))
 
         detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-        # print("Detections Transform: ")
-        # for de in detectionsTransform:
-        #     print(f"De Transform: {de[0]} - {de[1]} - {de[2]} - {de[4]}")
-        # # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-        # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-        # if (len(detectionsFilter["detections_max_age"]) > 0):
-        #     trackingModel.update(detectionsFilter["detections_max_age"], img)
-        # if (len(detectionsFilter["detections_un_matched"]) > 0):
-        #     trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
-        #     for track in trackings:
-        #         print(f"Track: {track[0]} - {track[1]} - {track[2]} - {track[4]}")
-
-            # trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
+        # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
+        # time_start_a = time.time()
+        detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+        # print("Lần : {} - {}".format(index,time.time()-time_start_a))
+        if (len(detectionsFilter["detections_max_age"]) > 0):
+            trackingModel.update(detectionsFilter["detections_max_age"], img)
+        if (len(detectionsFilter["detections_un_matched"]) > 0):
+            trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
+            trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
+        # index += 1
         # resultFacial = facialModel.extractionFacial(img = img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
     time_end = time.time()

@@ -11,8 +11,6 @@ class ComparetiveService:
 
 
     def is_matched(self, input1, input2):
-        dis = distance.compute_distance_matrix(input1 = input1,
+        return distance.compute_distance_matrix(input1 = input1,
                                        input2 = input2,
-                                       metric = self.metric)
-        print("DISTANCE: ", dis)
-        return dis <= self.distance_match
+                                       metric = self.metric) <= self.distance_match

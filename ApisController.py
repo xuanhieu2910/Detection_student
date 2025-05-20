@@ -39,17 +39,21 @@ def main():
     for img in imgs:
         results = detectionModel.predict(img)
 
-        # trackingModel.trackingDataObjectRoot(trackingModel.transformationDataDeepSortRoot(results, img))
+        trackingModel.trackingDataObjectRoot(trackingModel.transformationDataDeepSortRoot(results, img))
 
         detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-        # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-        detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-        if (len(detectionsFilter["detections_max_age"]) > 0):
-            trackingModel.update(detectionsFilter["detections_max_age"], img)
-        if (len(detectionsFilter["detections_un_matched"]) > 0):
-            trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
-            # for track in trackings:
-            #     print(f"Track: {track[0]} - {track[1]} - {track[2]} - {track[3]}")
+        # print("Detections Transform: ")
+        # for de in detectionsTransform:
+        #     print(f"De Transform: {de[0]} - {de[1]} - {de[2]} - {de[4]}")
+        # # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
+        # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+        # if (len(detectionsFilter["detections_max_age"]) > 0):
+        #     trackingModel.update(detectionsFilter["detections_max_age"], img)
+        # if (len(detectionsFilter["detections_un_matched"]) > 0):
+        #     trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
+        #     for track in trackings:
+        #         print(f"Track: {track[0]} - {track[1]} - {track[2]} - {track[4]}")
+
             # trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
         # resultFacial = facialModel.extractionFacial(img = img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)

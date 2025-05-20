@@ -44,7 +44,7 @@ class DetectorService:
             conf = self.to_conf(i)
             cls = self.to_cls(i)
             extract = self.to_extraction(xyxy,frame)
-            results.append([xyxy,xywh,conf,cls,extract,0,0])
+            results.append([xyxy,xywh,conf,cls,extract.tolist(),0,0])
       return self.toSort(results)
 
   def transformResultsRoot(self, detections, frame):

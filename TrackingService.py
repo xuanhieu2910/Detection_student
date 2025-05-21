@@ -25,7 +25,7 @@ class TrackingService:
   array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
   DETECTIONS_STORES = []
-  MAX_AGE = 25
+  MAX_AGE = 30
   INIT_MAX_AGE = 1
 
 
@@ -301,7 +301,8 @@ class TrackingService:
     for detection in detections:
       matched = False
       for detectionStore in self.DETECTIONS_STORES:
-        if self.comparativeService.is_matched(torch.tensor(np.array(detection[4])).unsqueeze(0), torch.tensor(np.array(detectionStore[4])).unsqueeze(0)):
+        if self.comparativeService.is_matched(torch.tensor(np.array(detection[4])).unsqueeze(0),
+                                              torch.tensor(np.array(detectionStore[4])).unsqueeze(0)):
           detection[5] = detectionStore[5]
           matched = True
           break
@@ -347,15 +348,3 @@ class TrackingService:
                                         img = detections['img'])
         self.model.multi_predict(dataInitTrack)
     return None
-
-
-
-  def filterTrackingDetectionsNew(self):
-    trackers = self.model.tracker.tracks
-    data = []
-    for tracker in trackers:
-      data.append([tracker.track_id, tracker.is_confirmed(),tracker.age, tracker.to_tlwh(), tracker.features])
-    return data
-    # print(f"Trackers: {self.model.tracker.tracks}")
-    # if len(self.model.tracker.tracks) < 1:
-    #   return detections

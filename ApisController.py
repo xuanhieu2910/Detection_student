@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\CBBDS"
+    pathRootDataset = "dataset\\Test2"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:

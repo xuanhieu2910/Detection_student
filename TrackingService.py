@@ -59,6 +59,8 @@ class TrackingService:
     embedder = loadConfig.get("deep_sort")["embedder"]
     embedder_model_name =  loadConfig.get("deep_sort")["embedder_model_name"]
     embedder_wts =  loadConfig.get("deep_sort")["embedder_wts"]
+    self.MAX_AGE = max_age
+    self.INIT_MAX_AGE = n_init
     return DeepSort(max_iou_distance = max_iou_distance,
                   max_age = max_age,
                   n_init = n_init,
@@ -79,7 +81,9 @@ class TrackingService:
     n_init = loadConfig.get("strong_sort")['n_init']
     max_dist = loadConfig.get("strong_sort")['max_dist']
     nn_budget = loadConfig.get("strong_sort")["nn_budget"]
-    model_weights = "C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\tracker\\model_weight\\osnet_x0_25.pt"
+    model_weights = loadConfig.get("strong_sort")["embedder_wts"]
+    self.MAX_AGE = max_age
+    self.INIT_MAX_AGE = n_init
     return StrongSORT(model_weights = model_weights,
                   device = device,
                   fp16 = fp16,
@@ -303,6 +307,7 @@ class TrackingService:
       for detectionStore in self.DETECTIONS_STORES:
         if self.comparativeService.is_matched(torch.tensor(np.array(detection[4])).unsqueeze(0),
                                               torch.tensor(np.array(detectionStore[4])).unsqueeze(0)):
+          detectionStore[5][4] = detection[5][4] # Update feature
           detection[5] = detectionStore[5]
           matched = True
           break

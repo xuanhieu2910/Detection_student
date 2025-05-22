@@ -31,6 +31,8 @@ strong_sort:
   max_age: 30                 # Maximum number of missed misses before a track is deleted
   n_init: 3                   # Number of frames that a track remains in initialization phase
   nn_budget: 100              # Maximum size of the appearance descriptors gallery
+  embedder_model_name: osnet_x0_25
+  embedder_wts: C:\Users\hieux\Desktop\Personal\Master\PROJECT\osnet_x0_25.pt
 #---------------------------------------------------------------------------------------------------------------------------------------
 # Config Byte Track
 byte_track:

@@ -319,6 +319,38 @@ class TrackingService:
     }
 
 
+  def filterTrackingDetectionsByteTracker(self,detections):
+    detections_un_matched = []
+    detections_max_age = []
+    if len(self.DETECTIONS_STORES) < 1:
+      return {
+        "detections_un_matched": detections,
+        "detections_max_age": detections_max_age
+      }
+    else:
+      for detectionStore in self.DETECTIONS_STORES:
+        if detectionStore[6] >= self.MAX_AGE:
+          detectionStore[6] = int(self.INIT_MAX_AGE)
+          detections_max_age.append(detectionStore)
+        else:
+          detectionStore[6] += 1
+
+    for detection in detections:
+      matched = False
+      for detectionStore in self.DETECTIONS_STORES:
+        if self.comparativeService.is_matched(torch.tensor(np.array(detection[3])).unsqueeze(0),
+                                              torch.tensor(np.array(detectionStore[3])).unsqueeze(0)):
+          detectionStore[5][3] = detection[5][3] # Update feature
+          detection[5] = detectionStore[5]
+          matched = True
+          break
+      if not matched:
+        detections_un_matched.append(detection)
+    return {
+      "detections_un_matched": detections_un_matched,
+      "detections_max_age": detections_max_age
+    }
+
   def updateFilterTracking(self, detections, trackings):
     for index,detection in enumerate(detections):
         if trackings[index][2]:

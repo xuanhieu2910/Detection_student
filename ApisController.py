@@ -25,7 +25,7 @@ def main():
     """
     # initialize
     detectionModel = ds.DetectorService("C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\yolov5nu.pt")
-    trackingModel = ts.TrackingService("StrongSort")
+    trackingModel = ts.TrackingService("ByteTracker")
 
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
@@ -38,23 +38,20 @@ def main():
 
     for img in imgs:
         results = detectionModel.predict(img)
+        # print(type(results))
 
-        trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataStrongSort(results, img))
+        # trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataByteTracker(results, img))
         # for tracking in trackings:
-        #     print(tracking)
-            # print(f"x1: {tracking[0]} - y1: {tracking[1]} - x2: {tracking[2]} - y2: {tracking[3]} - ID: {tracking[4]} - Features: {tracking[5]}")
-        # detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-        # for detection in detectionsTransform:
-        #     print(f"xyxy: {detection[0]}- Features: {detection[4]}")
+        #     print(f"x1: {tracking[0]} - y1: {tracking[1]} - x2: {tracking[2]} - y2: {tracking[3]} - ID: {tracking[4]} - Conf: {tracking[5]}")
+        detectionsTransform = detectionModel.transformResultsByteTracker(results, cv2.imread(img))
         # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
         # time_start_a = time.time()
-        # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-        # # print("Lần : {} - {}".format(index,time.time()-time_start_a))
-        # if (len(detectionsFilter["detections_max_age"]) > 0):
-        #     trackingModel.update(detectionsFilter["detections_max_age"], img)
-        # if (len(detectionsFilter["detections_un_matched"]) > 0):
-        #     trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
-        #     trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
+        detectionsFilter = trackingModel.filterTrackingDetectionsByteTracker(detectionsTransform)
+        if (len(detectionsFilter["detections_max_age"]) > 0):
+            trackingModel.update(detectionsFilter["detections_max_age"], img)
+        if (len(detectionsFilter["detections_un_matched"]) > 0):
+            trackings = trackingModel.update(detectionsFilter["detections_un_matched"][2], img)
+            trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
 
         # resultFacial = facialModel.extractionFacial(img = img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)

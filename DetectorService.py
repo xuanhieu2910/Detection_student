@@ -41,6 +41,7 @@ class DetectorService:
       crops = []
       xyxy_list = []
 
+
       for detection in detections:
           for box in detection.boxes:
               xyxy = self.to_xyxy(box)
@@ -61,6 +62,32 @@ class DetectorService:
           results.append([xyxy, xywh, conf, cls, feat, 0, 0])
 
       return self.toSort(results)
+
+  def transformResultsByteTracker(self, detections, frame):
+      results = []
+      crops = []
+      xyxy_list = []
+
+      for detection in detections:
+          for box in detection.boxes:
+              box = box
+              xyxy = self.to_xyxy(box)
+              xywh = self.to_xywh(box)
+              # Lưu thông tin crop để xử lý batch sau
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+              xyxy_list.append((xyxy, xywh, box))
+
+      # Chạy batch extraction một lần duy nhất
+      features = self.modelExtraction.extraction_feature(np_images=crops)
+
+      # Gộp kết quả
+      for (xyxy, xywh, box), feat in zip(xyxy_list, features):
+          results.append([xyxy, xywh, box, feat, 0, 0])
+
+      return self.toSort(results)
+
+
 
   def transformResultsRoot(self, detections, frame):
       results = []

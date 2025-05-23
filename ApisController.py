@@ -1,8 +1,8 @@
 import os
 import cv2
-import BodyPoseService as bps
+#import BodyPoseService as bps
 import DetectorService as ds
-import FacialService as fs
+#import FacialService as fs
 import TrackingService as ts
 # import ComparetiveService as cs
 import torch
@@ -24,8 +24,9 @@ def main():
       BotSort tam thoi dung lai, can phai xem lai BotSort
     """
     # initialize
-    detectionModel = ds.DetectorService("C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\yolov5nu.pt")
-    trackingModel = ts.TrackingService("StrongSort")
+    tracker_type = "StrongSort"
+    detectionModel = ds.DetectorService("D:\\AnhThienLe\\Intern_CV\\Detection_student\\yolov5nu.pt")
+    trackingModel = ts.TrackingService(tracker_type)
 
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
@@ -38,8 +39,10 @@ def main():
 
     for img in imgs:
         results = detectionModel.predict(img)
+        detectionsTransform = detectionModel.transformResults(results, cv2.imread(img),tracker_type)
+        """Option 1"""
+        trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataStrongSort(detectionsTransform, img))
 
-        trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataStrongSort(results, img))
         # for tracking in trackings:
         #     print(tracking)
             # print(f"x1: {tracking[0]} - y1: {tracking[1]} - x2: {tracking[2]} - y2: {tracking[3]} - ID: {tracking[4]} - Features: {tracking[5]}")

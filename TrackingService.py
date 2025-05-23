@@ -10,8 +10,8 @@ from tracker.deep_sort_real_time.deep_sort_real_time.deepsort_tracker import Dee
 sys.path.append(os.path.abspath("\\tracker\\strongsort\\strongsort"))
 from tracker.strongsort.strongsort.strong_sort import StrongSORT
 sys.path.append(os.path.abspath("\\detector_tracker\\ultralytics\\trackers"))
-from detector_tracker.ultralytics.trackers.byte_tracker import BYTETracker
-from detector_tracker.ultralytics.trackers.bot_sort import BOTSORT
+# from detector_tracker.ultralytics.trackers.byte_tracker import BYTETracker
+# from detector_tracker.ultralytics.trackers.bot_sort import BOTSORT
 import argparse
 import cv2
 import torch
@@ -214,16 +214,29 @@ class TrackingService:
 
   def transformationDataStrongSort(self, results, img):
     detection = []
+    embeds = []
+
     frame = cv2.imread(img)
+    # for result in results:
+    #   for i in result.boxes:
+    #     xyxy = self.to_xyxy(i)
+    #     xywh = self.to_xywh(i)       
+    #     conf = self.to_conf(i)
+    #     cls = self.to_cls(i)
+    #     detection.append([xyxy[0],xyxy[1],xyxy[2],xyxy[3], conf, cls])
+    #   embeds.append(result[4])
     for result in results:
-      for i in result.boxes:
-        xyxy = self.to_xyxy(i)
-        conf = self.to_conf(i)
-        cls = self.to_cls(i)
-        detection.append([xyxy[0],xyxy[1],xyxy[2],xyxy[3], conf, cls])
+        xyxy = result[0]  # [x1, y1, x2, y2]
+        conf = result[2]  # confidence
+        cls = result[3]   # class
+        feat = result[4]  # feature vector
+
+        detection.append([xyxy[0], xyxy[1], xyxy[2], xyxy[3], conf, cls])
+        embeds.append(feat)
     return {
       "detections": torch.tensor(detection),
-      "frame": frame
+      "frame": frame,
+      "embeds": embeds
     }
 
   def transformationDataByteTracker(self, results, img):
@@ -252,7 +265,7 @@ class TrackingService:
       # tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
       return self.transformTrackingDeepSort(tracking)
     if self.type_model == "StrongSort":
-      return self.model.update(dets = detections['detections'], ori_img = detections['frame'])
+      return self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
     if self.type_model == "ByteTracker":
       return self.model.update(results = detections['detections'], img = detections['img'])
     if self.type_model == "BotSort":
@@ -342,7 +355,7 @@ class TrackingService:
     if self.type_model == "DeepSort":
       return self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
     if self.type_model == "StrongSort":
-      return self.model.update(dets = detections['detections'], ori_img = detections['frame'])
+      return self.model.update(dets = detections['detections'], ori_img = detections['frame'],embeds = detections['embeds'])
     if self.type_model == "ByteTracker":
       return self.model.update(results = detections['detections'], img = detections['img'])
     if self.type_model == "BotSort":

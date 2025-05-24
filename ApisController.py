@@ -18,40 +18,46 @@ def loadDataset():
     return imgs
 
 
-def main():
+def main(run_original = True):
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker", "BotSort"]
     """"
       BotSort tam thoi dung lai, can phai xem lai BotSort
     """
+    type_model_tracking = typeTracking[1]
     # initialize
-    detectionModel = ds.DetectorService("C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\yolov5nu.pt")
-    trackingModel = ts.TrackingService("ByteTracker")
+    detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
+    run_original = run_original
+    trackingModel = ts.TrackingService(type_model_tracking, run_original)
 
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
-
-    # modelCompare = cs.ComparetiveService()
-
 
     imgs = loadDataset()
     time_start = time.time()
 
     for img in imgs:
         results = detectionModel.predict(img)
-        # print(type(results))
 
-        # trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataByteTracker(results, img))
-        # for tracking in trackings:
-        #     print(f"x1: {tracking[0]} - y1: {tracking[1]} - x2: {tracking[2]} - y2: {tracking[3]} - ID: {tracking[4]} - Conf: {tracking[5]}")
-        detectionsTransform = detectionModel.transformResultsByteTracker(results, cv2.imread(img))
-        # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-        # time_start_a = time.time()
-        detectionsFilter = trackingModel.filterTrackingDetectionsByteTracker(detectionsTransform)
-        if (len(detectionsFilter["detections_max_age"]) > 0):
-            trackingModel.update(detectionsFilter["detections_max_age"], img)
-        if (len(detectionsFilter["detections_un_matched"]) > 0):
-            trackings = trackingModel.update(detectionsFilter["detections_un_matched"][2], img)
-            trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
+        if run_original:
+            result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, img))
+        else:
+            # time_start_1 = time.time()
+            detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
+            # print(f"Time detection transformation : {time.time() - time_start_1}")
+            # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
+            # time_start_2 = time.time()
+            detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+            # print(f"Time detections filter : {time.time() - time_start_2}")
+            if (len(detectionsFilter["detections_max_age"]) > 0):
+                trackingModel.update_tracking(detectionsFilter["detections_max_age"], img)
+            if (len(detectionsFilter["detections_un_matched"]) > 0):
+                # time_start_3 = time.time()
+                result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter["detections_un_matched"], img)
+                # print(f"Time detections un_matched : {time.time() - time_start_3}")
+                # time_start_4 = time.time()
+                trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], result_tracking_un_matched)
+                # print(f"Time update detections filter un_matched : {time.time() - time_start_4}")
+
 
         # resultFacial = facialModel.extractionFacial(img = img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
@@ -59,4 +65,4 @@ def main():
     print("Time elapsed: " + str(time_end - time_start))
 
 if __name__ == "__main__":
-    main()
+    main(run_original = True)

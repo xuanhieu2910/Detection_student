@@ -36,7 +36,7 @@ class StrongSORT(object):
         metric = NearestNeighborDistanceMetric("cosine", self.max_dist, nn_budget)
         self.tracker = Tracker(metric, max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init)
 
-    def update(self, dets, ori_img):
+    def update(self, dets, ori_img, embeds = None):
         xyxys = dets[:, :4]
         xyxys = dets[:, 0:4]
         confs = dets[:, 4]
@@ -46,9 +46,11 @@ class StrongSORT(object):
         xywhs = xyxy2xywh(xyxys.numpy())
         confs = confs.numpy()
         self.height, self.width = ori_img.shape[:2]
-
         # generate detections
-        features = self._get_features(xywhs, ori_img)
+        if embeds is None:
+            features = self._get_features(xywhs, ori_img)
+        else:
+            features = embeds
         bbox_tlwh = self._xywh_to_tlwh(xywhs)
         detections = [Detection(bbox_tlwh[i], conf, features[i]) for i, conf in enumerate(confs)]
 

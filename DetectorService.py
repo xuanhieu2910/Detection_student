@@ -18,10 +18,11 @@ class DetectorService:
   maxDet = loadConfig['max_det']
   classes = loadConfig["classes"]
 
-  def __init__(self, modelWeight):
+  def __init__(self, modelWeight, type_model_tracking):
     self.model = YOLO(modelWeight)
-    self.modelExtraction = efs.ExtractionFeatureService()
+    self.modelExtraction = efs.ExtractionFeatureService(type_model_tracking)
     self.modelComparative = compares.ComparetiveService()
+    self.model_tracking = type_model_tracking
 
   def predict(self, img):
     result =  self.model.predict(img,
@@ -35,13 +36,20 @@ class DetectorService:
   """
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
-
   def transformResults(self, detections, frame):
+      if self.model_tracking == "DeepSort":
+          return self.transform_result_to_deep_sort(detections, frame)
+      if self.model_tracking == "StrongSort":
+          return self.transform_result_to_strong_sort(detections, frame)
+      if self.model_tracking == "ByteTracker":
+          return self.transform_result_to_byte_tracker(detections, frame)
+      if self.model_tracking == "BotSort":
+          return self.transform_result_to_bot_sort(detections, frame)
+
+  def transform_result_to_deep_sort(self, detections, frame):
       results = []
       crops = []
       xyxy_list = []
-
-
       for detection in detections:
           for box in detection.boxes:
               xyxy = self.to_xyxy(box)
@@ -55,7 +63,7 @@ class DetectorService:
               xyxy_list.append((xyxy, xywh, conf, cls))
 
       # Chạy batch extraction một lần duy nhất
-      features = self.modelExtraction.extraction_feature(np_images=crops)
+      features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
 
       # Gộp kết quả
       for (xyxy, xywh, conf, cls), feat in zip(xyxy_list, features):
@@ -63,7 +71,30 @@ class DetectorService:
 
       return self.toSort(results)
 
-  def transformResultsByteTracker(self, detections, frame):
+  def transform_result_to_strong_sort(self, detections, frame):
+      results = []
+      crops = []
+      xyxy_list = []
+      for detection in detections:
+          for box in detection.boxes:
+              xyxy = self.to_xyxy(box)
+              conf = self.to_conf(box)
+              cls = self.to_cls(box)
+
+              # Lưu thông tin crop để xử lý batch sau
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+              xyxy_list.append((xyxy, conf, cls))
+
+      # Chạy batch extraction một lần duy nhất
+      features = self.modelExtraction.extractFeatures(np_images=crops)
+      # Gộp kết quả
+      for (xyxy, conf, cls), feat in zip(xyxy_list, features):
+          results.append([xyxy, conf, cls, feat, 0, 0])
+
+      return self.toSort(results)
+
+  def transform_result_to_byte_tracker(self, detections, frame):
       results = []
       crops = []
       xyxy_list = []
@@ -87,17 +118,39 @@ class DetectorService:
 
       return self.toSort(results)
 
-
-
-  def transformResultsRoot(self, detections, frame):
+  def transform_result_to_bot_sort(self, detections, frame):
       results = []
+      crops = []
+      xyxy_list = []
+
       for detection in detections:
-          for i in detection.boxes:
-            xyxy = self.to_xyxy(i)
-            conf = self.to_conf(i)
-            cls = self.to_cls(i)
-            results.append([xyxy,conf,cls])
+          for box in detection.boxes:
+              box = box
+              xyxy = self.to_xyxy(box)
+              xywh = self.to_xywh(box)
+              # Lưu thông tin crop để xử lý batch sau
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+              xyxy_list.append((xyxy, xywh, box))
+
+      # Chạy batch extraction một lần duy nhất
+      features = self.modelExtraction.extraction_feature(np_images=crops)
+
+      # Gộp kết quả
+      for (xyxy, xywh, box), feat in zip(xyxy_list, features):
+          results.append([xyxy, xywh, box, feat, 0, 0])
+
       return self.toSort(results)
+
+  # def transformResultsRoot(self, detections, frame):
+  #     results = []
+  #     for detection in detections:
+  #         for i in detection.boxes:
+  #           xyxy = self.to_xyxy(i)
+  #           conf = self.to_conf(i)
+  #           cls = self.to_cls(i)
+  #           results.append([xyxy,conf,cls])
+  #     return self.toSort(results)
 
   def to_xywh(self, box):
       x = float(box.xywh.cpu().numpy()[0][0])
@@ -135,4 +188,4 @@ class DetectorService:
       return res
 
   def toSort(self, detections):
-      return sorted(detections, key=lambda x: x[0][0], reverse=False)
+      return sorted(detections, key=lambda x: x[0][0], reverse=True)

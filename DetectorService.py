@@ -48,29 +48,30 @@ class DetectorService:
           return self.transform_result_to_bot_sort(detections, frame)
 
   def transform_result_to_deep_sort(self, detections, frame):
-      results = []
       crops = []
       xyxy_list = []
       for detection in detections:
           for box in detection.boxes:
               xyxy = self.to_xyxy(box)
-              xywh = self.to_xywh(box)
               conf = self.to_conf(box)
               cls = self.to_cls(box)
 
               # Lưu thông tin crop để xử lý batch sau
               crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
               crops.append(crop)
-              xyxy_list.append((xyxy, xywh, conf, cls))
+              xyxy_list.append([xyxy,conf, cls, 0, 0])
 
-      # Chạy batch extraction một lần duy nhất
       features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
 
-      # Gộp kết quả
-      for (xyxy, xywh, conf, cls), feat in zip(xyxy_list, features):
-          results.append([xyxy, xywh, conf, cls, feat, 0, 0])
+      # # Gộp kết quả
+      # for (xyxy, conf, cls), feat in zip(xyxy_list, features):
+      #     results.append([xyxy, conf, cls, feat, 0, 0])
 
-      return self.toSort(results)
+      return {
+          "detections": xyxy_list,
+          "frame": frame,
+          "embeds": features
+      }
 
   def transform_result_to_strong_sort(self, detections, frame):
       detection = []

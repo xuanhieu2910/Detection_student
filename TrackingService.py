@@ -202,17 +202,7 @@ class TrackingService:
         "frame": frame
       }
     else:
-      detection = []
-      embeds = []
-      frame = cv2.imread(img)
-      for result in results:
-          detection.append([result[0], result[2], result[3], result[4]])
-          embeds.append(result[4])
-      return {
-        "detections": detection,
-        "frame": frame,
-        "embeds":embeds
-      }
+      return results
 
   "results.append([xyxy, conf, cls])"
   def transformationDataStrongSort(self, results, img):
@@ -269,7 +259,7 @@ class TrackingService:
     else:
       if self.type_model == "DeepSort":
         tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
-        return self.transformResultsTrackingDeepSort(tracking)
+        return self.transformResultsTrackingDeepSort(tracking, detections['embeds'] )
       if self.type_model == "StrongSort":
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
         return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
@@ -316,38 +306,40 @@ class TrackingService:
       return self.filterTrackingDetectionsBotSort(detections)
 
   def filterTrackingDetectionsDeepSort(self,detections):
-    detections_un_matched = []
-    detections_max_age = []
-    if len(self.DETECTIONS_STORES) < 1:
-      return {
-        "detections_un_matched": detections,
-        "detections_max_age": detections_max_age
-      }
+    store_matched_flags = [False] * len(self.DETECTIONS_STORES)
+    if not self.DETECTIONS_STORES:
+      return detections
     else:
-      for detectionStore in self.DETECTIONS_STORES:
-        if detectionStore[6] >= self.MAX_AGE:
-          detectionStore[6] = int(self.INIT_MAX_AGE)
-          detections_max_age.append(detectionStore)
-        else:
-          detectionStore[6] += 1
+      for index, embed in enumerate(detections['embeds']):
+        matched = False
+        embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
 
-    for detection in detections:
-      matched = False
-      for detectionStore in self.DETECTIONS_STORES:
-        if self.comparativeService.is_matched(torch.tensor(np.array(detection[4])).unsqueeze(0),
-                                              torch.tensor(np.array(detectionStore[4])).unsqueeze(0)):
-          detectionStore[4] = detection[4]  # Update feature
-          detection[5] = detectionStore[5]  # Update id
-          matched = True
-          break
+        # detection = {((xyxy,conf, cls, 0, 0)) and embeds}
+        # Detection_stores = [tracking_id, max_age, embeds]
+        for idx, detection_store in enumerate(self.DETECTIONS_STORES):
+          embed_store = torch.tensor(np.array(detection_store[2])).unsqueeze(0)
+
+          if self.comparativeService.is_matched(embed_tensor, embed_store):
+            self.DETECTIONS_STORES[idx][2] = embed
+            self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
+            detections['detections'][index][4] = self.DETECTIONS_STORES[idx][0]
+            matched = True
+            store_matched_flags[idx] = True
+            break
+        if not matched:
+          del detections['detections'][index]
+          del detections['embeds'][index]
+
+    for idx, matched in enumerate(store_matched_flags):
       if not matched:
-        detections_un_matched.append(detection)
-    return {
-      "detections_un_matched": detections_un_matched,
-      "detections_max_age": detections_max_age
-    }
+        self.DETECTIONS_STORES[idx][1] += 1
 
-  """Detection stores: [track_id,max_age,embed])"""
+    self.DETECTIONS_STORES = [
+      store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
+    ]
+    return detections
+
+
   def filterTrackingDetectionsStrongSort(self,detections):
     if not self.DETECTIONS_STORES:
       return detections
@@ -364,6 +356,7 @@ class TrackingService:
         if self.comparativeService.is_matched(embed_tensor,store_tensor):
           self.DETECTIONS_STORES[idx][2] = embed
           self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
+          detections['detections'][index][6] = self.DETECTIONS_STORES[idx][0]
           matched = True
           store_matched_flags[idx] = True
           break
@@ -449,28 +442,29 @@ class TrackingService:
   def updateFilterTracking(self, detections, results_tracking_un_matched):
     if len(results_tracking_un_matched) != 0:
       if self.type_model == "DeepSort":
-        for index, detection in enumerate(detections):
-          if results_tracking_un_matched[index][2] is not None:
-            detection[5] = int(results_tracking_un_matched[index][1])
-            detection[6] = self.INIT_MAX_AGE
+        for index, detection_un_matched in enumerate(results_tracking_un_matched):
+          if detection_un_matched[0] is not None:
+            detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1]]
             self.DETECTIONS_STORES.append(detection)
       if self.type_model == "StrongSort":
         for index, detection_un_matched in enumerate(results_tracking_un_matched):
           """results_tracking_un_matched = ([track_id, embed])"""
           """Detection stores: [track_id,max_age,embed])"""
           if detection_un_matched[0] is not None:
-            detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1], ]
+            detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1]]
             self.DETECTIONS_STORES.append(detection)
       if self.type_model == "ByteTracker":
         return self.filterTrackingDetectionsByteTracker(detections)
       if self.type_model == "BotSort":
         return self.filterTrackingDetectionsBotSort(detections)
 
-  def transformResultsTrackingDeepSort(self, resultsTracking):
+  def transformResultsTrackingDeepSort(self, resultsTracking,embeds):
     trackings = []
-    for results in resultsTracking:
-      trackings.append([results.to_tlwh(),results.track_id, results.is_confirmed(), results.age, results.features])
-    return self.toSort(trackings)
+    min_len = min(len(resultsTracking), len(embeds))
+    for index in range(min_len):
+      if resultsTracking[index].track_id is not None and resultsTracking[index].is_confirmed():
+        trackings.append([resultsTracking[index].track_id, embeds[index]])
+    return trackings
 
   def transformResultsTrackingStrongSort(self, resultsTracking, embeds):
     trackings = []

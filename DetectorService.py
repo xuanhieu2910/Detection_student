@@ -1,13 +1,14 @@
 import sys
 import os
+import time
 
 sys.path.append(os.path.abspath("detector_tracker"))
 from ultralytics import YOLO
 import load_config as config
 import ExtractionFeatureService as efs
 import ComparetiveService as compares
-
-
+import torch
+import numpy as np
 
 class DetectorService:
 
@@ -72,27 +73,32 @@ class DetectorService:
       return self.toSort(results)
 
   def transform_result_to_strong_sort(self, detections, frame):
-      results = []
+      detection = []
       crops = []
-      xyxy_list = []
-      for detection in detections:
-          for box in detection.boxes:
-              xyxy = self.to_xyxy(box)
-              conf = self.to_conf(box)
-              cls = self.to_cls(box)
+      frame_h, frame_w = frame.shape[:2]
+      for result in detections:
+          for i in result.boxes:
+              xyxy = self.to_xyxy(i)
+              conf = self.to_conf(i)
+              cls = self.to_cls(i)
+              detection.append([xyxy[0], xyxy[1], xyxy[2], xyxy[3], conf, cls, 0, 0])
 
-              # Lưu thông tin crop để xử lý batch sau
-              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
-              crops.append(crop)
-              xyxy_list.append((xyxy, conf, cls))
+              x1, y1, x2, y2 = map(int, xyxy)
+              x1 = max(0, min(x1, frame_w - 1))
+              y1 = max(0, min(y1, frame_h - 1))
+              x2 = max(0, min(x2, frame_w))
+              y2 = max(0, min(y2, frame_h))
 
-      # Chạy batch extraction một lần duy nhất
-      features = self.modelExtraction.extractFeatures(np_images=crops)
-      # Gộp kết quả
-      for (xyxy, conf, cls), feat in zip(xyxy_list, features):
-          results.append([xyxy, conf, cls, feat, 0, 0])
+              if x2 > x1 and y2 > y1:
+                crop = frame[y1:y2, x1:x2]
+                crops.append(crop)
+      return {
+          "detections": torch.tensor(detection),
+          "frame": frame,
+          "embeds": self.modelExtraction.extractFeatures(np_images=crops) if crops else []
+      }
 
-      return self.toSort(results)
+
 
   def transform_result_to_byte_tracker(self, detections, frame):
       results = []

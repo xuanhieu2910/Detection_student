@@ -1,5 +1,6 @@
 import sys
 import os
+import time
 
 import numpy as np
 
@@ -161,17 +162,17 @@ class TrackingService:
   Arrays have form is: [boundingbox, conf, class, img, frame]
   """
   def transformationDataInputTracking(self, results, img):
-    if self.type_model == "DeepSort":
-      return self.transformationDataDeepSort(results, img)
-    if self.type_model == "StrongSort":
+    # if self.type_model == "DeepSort":
+    #   return self.transformationDataDeepSort(results, img)
+    # if self.type_model == "StrongSort":
       return self.transformationDataStrongSort(results, img)
-    if self.type_model == "ByteTracker":
-      return self.transformationDataByteTracker(results, img)
-    if self.type_model == "BotSort":
-      return self.transformationDataBotSort(results, img)
-    return None
-
-  
+    # if self.type_model == "ByteTracker":
+    #   return self.transformationDataByteTracker(results, img)
+    # if self.type_model == "BotSort":
+    #   return self.transformationDataBotSort(results, img)
+    # return None
+    #
+    #
   """
   This method using to transformation to data input for DeepSort
   Parameters
@@ -213,7 +214,7 @@ class TrackingService:
         "embeds":embeds
       }
 
-  "results.append([xyxy, conf, cls, feat, 0, 0])"
+  "results.append([xyxy, conf, cls])"
   def transformationDataStrongSort(self, results, img):
     if self.run_original:
       detection = []
@@ -229,17 +230,7 @@ class TrackingService:
         "frame": frame
       }
     else:
-      detection = []
-      embeds = []
-      frame = cv2.imread(img)
-      for result in results:
-        detection.append([result[0][0], result[0][1], result[0][2], result[0][3], result[1], result[2]])
-        embeds.append(result[3])
-      return {
-        "detections": torch.tensor(detection),
-        "frame": frame,
-        "embeds": F.relu(torch.stack(embeds, dim = 0))
-      }
+      return results
 
   def transformationDataByteTracker(self, results, img):
     return {
@@ -359,7 +350,8 @@ class TrackingService:
     }
 
 
-  "results.append([xyxy, conf, cls, feat, 0, 0])"
+  "trackings.append([xyxy, track_id, embed, id, max_age])"
+  """Detection stores: [torch.tensor(detection),track_id,max_age,embed])"""
   def filterTrackingDetectionsStrongSort(self,detections):
     detections_un_matched = []
     detections_max_age = []
@@ -371,27 +363,27 @@ class TrackingService:
       }
 
     for store in self.DETECTIONS_STORES:
-      if store[5] >= self.MAX_AGE:
-        store[5] = int(self.INIT_MAX_AGE)
+      if store[2] >= self.MAX_AGE:
+        store[2] = int(self.INIT_MAX_AGE)
         detections_max_age.append(store)
       else:
-        store[5] += 1
+        store[2] += 1
 
-    for detection in detections:
+    for index, embeds in enumerate(detections['embeds']):
       matched = False
-      detection_feat = torch.tensor(np.array(detection[3])).unsqueeze(0)
+      detection_feat = torch.tensor(np.array(embeds)).unsqueeze(0)
 
       for store in self.DETECTIONS_STORES:
         store_feat = torch.tensor(np.array(store[3])).unsqueeze(0)
-
+        """[x1,y1,x2,y2, conf, clss, id, max_age]"""
         if self.comparativeService.is_matched(detection_feat, store_feat):
-          store[3] = detection[3]
-          detection[4] = store[4]
-          matched = True
-          break
+            store[3] = embeds
+            detections['detections'][index][6] = store[1]
+            matched = True
+            break
 
       if not matched:
-        detections_un_matched.append(detection)
+        detections_un_matched.append(detections['detections'][index])
 
     return {
       "detections_un_matched": detections_un_matched,
@@ -474,18 +466,19 @@ class TrackingService:
       #         self.DETECTIONS_STORES.append(detection)
 
       # if self.type_model == "StrongSort":
+      # trackings.append([xyxy, track_id, embed, id, max_age])
+
           for index, detection_un_matched in enumerate(results_tracking_un_matched):
+            """results_tracking_un_matched = [bbox, track_id, embed])"""
+            """Detection stores: [torch.tensor(detection),track_id,max_age,embed])"""
+            print(detection_un_matched)
             if detection_un_matched[1] is not None:
-              detections[index][4] = detection_un_matched[1]
-              detections[index][5] = self.INIT_MAX_AGE
-              self.DETECTIONS_STORES.append(detections[index])
+              detection = [detections["detections"][index],detection_un_matched[1], ]
+              self.DETECTIONS_STORES.append(detection)
       # if self.type_model == "ByteTracker":
       #   return self.filterTrackingDetectionsByteTracker(detections)
       # if self.type_model == "BotSort":
       #   return self.filterTrackingDetectionsBotSort(detections)
-
-
-
 
   def transformResultsTrackingDeepSort(self, resultsTracking):
     trackings = []

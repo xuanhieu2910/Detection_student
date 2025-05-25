@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test"
+    pathRootDataset = "dataset\\Test2"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -33,36 +33,39 @@ def main(run_original = True):
     # bodyPoseModel = bps.BodyPoseService()
 
     imgs = loadDataset()
-    # i = 0
-    # aver_time = 0
-    # for i in range(5):
-    #     print("i = {}".format(i))
-    #     time_start = time.time()
-    for img in imgs:
-        results = detectionModel.predict(img)
+    i = 0
+    aver_time = 0
+    print("i = {}".format(i))
+    for i in range(5):
+        time_start = time.time()
+        for img in imgs:
+            results = detectionModel.predict(img)
 
-        if run_original:
-            result_tracking = trackingModel.trackingDataObject(
-                trackingModel.transformationDataInputTracking(results, img))
-        else:
-            detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-            # print(f" DT: {detectionsTransform}")
-            # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-            detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-            # print(f" DF: {detectionsFilter}")
-            if (len(detectionsFilter["detections_max_age"]) > 0):
-                trackingModel.update_tracking(detectionsFilter["detections_max_age"], img)
-            if (len(detectionsFilter["detections_un_matched"]) > 0):
-                result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter["detections_un_matched"],
-                                                                           img)
-                trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"],
-                                                   result_tracking_un_matched)
+            if run_original:
+                result_tracking = trackingModel.trackingDataObject(
+                    trackingModel.transformationDataInputTracking(results, img))
+            else:
+                # time_str = time.time()
+                detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
+                # print("Detection time: ", time.time() - time_str)
+                # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
+                # time_file = time.time()
+                detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
 
-            # resultFacial = facialModel.extractionFacial(img = img)
-            # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
-        # time_end = time.time()
-        # aver_time += time_end - time_start
-    # print("Total time average is {}".format(aver_time/5))
+                # print("Time filter: ", time.time() - time_file)
+                # print("Detection filter: ")
+                # for de in detectionsTransform['detections']:
+                #     print(de)
+                if len(detectionsFilter['detections']) > 0:
+                    # time_tracking = time.time()
+                    result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,img)
+                    trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
+                    # print("Time tracking: ", time.time() - time_tracking)
+                # resultFacial = facialModel.extractionFacial(img = img)
+                # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
+        time_end = time.time()
+        aver_time += time_end - time_start
+    print("Total time average is {}".format(aver_time/5))
 
 if __name__ == "__main__":
-    main(run_original = False)
+    main(run_original = True)

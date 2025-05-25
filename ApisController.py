@@ -45,24 +45,14 @@ def main(run_original = True):
                 result_tracking = trackingModel.trackingDataObject(
                     trackingModel.transformationDataInputTracking(results, img))
             else:
-                # time_str = time.time()
                 detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-                # print("Detection time: ", time.time() - time_str)
                 # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-                # time_file = time.time()
                 detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-
-                # print("Time filter: ", time.time() - time_file)
-                # print("Detection filter: ")
-                # for de in detectionsTransform['detections']:
-                #     print(de)
                 if len(detectionsFilter['detections']) > 0:
-                    # time_tracking = time.time()
                     result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,img)
                     trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
-                    # print("Time tracking: ", time.time() - time_tracking)
-                # resultFacial = facialModel.extractionFacial(img = img)
-                # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
+                    # resultFacial = facialModel.extractionFacial(img = img)
+                    # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
         time_end = time.time()
         aver_time += time_end - time_start
     print("Total time average is {}".format(aver_time/5))

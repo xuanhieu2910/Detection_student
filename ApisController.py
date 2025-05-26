@@ -23,7 +23,7 @@ def main(run_original = True):
     """"
       BotSort tam thoi dung lai, can phai xem lai BotSort
     """
-    type_model_tracking = typeTracking[0]
+    type_model_tracking = typeTracking[2]
     # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
     run_original = run_original
@@ -62,4 +62,4 @@ def main(run_original = True):
 
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = False)
+    main(run_original = True)

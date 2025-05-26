@@ -116,11 +116,8 @@ class DetectorService:
               crops.append(crop)
               xyxy_list.append((xyxy, xywh, box))
 
-      # Chạy batch extraction một lần duy nhất
-      features = self.modelExtraction.extraction_feature(np_images=crops)
-
       # Gộp kết quả
-      for (xyxy, xywh, box), feat in zip(xyxy_list, features):
+      for (xyxy, xywh, box), feat in zip(xyxy_list):
           results.append([xyxy, xywh, box, feat, 0, 0])
 
       return self.toSort(results)

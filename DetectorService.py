@@ -38,14 +38,14 @@ class DetectorService:
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
   def transformResults(self, detections, frame):
-      if self.model_tracking == "DeepSort":
-          return self.transform_result_to_deep_sort(detections, frame)
-      if self.model_tracking == "StrongSort":
+      # if self.model_tracking == "DeepSort":
+      #     return self.transform_result_to_deep_sort(detections, frame)
+      # if self.model_tracking == "StrongSort":
           return self.transform_result_to_strong_sort(detections, frame)
-      if self.model_tracking == "ByteTracker":
-          return self.transform_result_to_byte_tracker(detections, frame)
-      if self.model_tracking == "BotSort":
-          return self.transform_result_to_bot_sort(detections, frame)
+      # if self.model_tracking == "ByteTracker":
+      #     return self.transform_result_to_byte_tracker(detections, frame)
+      # if self.model_tracking == "BotSort":
+      #     return self.transform_result_to_bot_sort(detections, frame)
 
   def transform_result_to_deep_sort(self, detections, frame):
       crops = []
@@ -76,27 +76,18 @@ class DetectorService:
   def transform_result_to_strong_sort(self, detections, frame):
       detection = []
       crops = []
-      frame_h, frame_w = frame.shape[:2]
       for result in detections:
           for i in result.boxes:
               xyxy = self.to_xyxy(i)
               conf = self.to_conf(i)
               cls = self.to_cls(i)
               detection.append([xyxy[0], xyxy[1], xyxy[2], xyxy[3], conf, cls, 0, 0])
-
-              x1, y1, x2, y2 = map(int, xyxy)
-              x1 = max(0, min(x1, frame_w - 1))
-              y1 = max(0, min(y1, frame_h - 1))
-              x2 = max(0, min(x2, frame_w))
-              y2 = max(0, min(y2, frame_h))
-
-              if x2 > x1 and y2 > y1:
-                crop = frame[y1:y2, x1:x2]
-                crops.append(crop)
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
       return {
           "detections": torch.tensor(detection),
           "frame": frame,
-          "embeds": self.modelExtraction.extractFeatures(np_images=crops) if crops else []
+          "embeds": self.modelExtraction.extractFeatures(np_images=crops)
       }
 
 

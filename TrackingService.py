@@ -134,17 +134,17 @@ class TrackingService:
     return BOTSORT(parser.parse_args())
 
 
-  def update_tracking(self, results, img):
-    detections = None
-    if self.type_model == "DeepSort":
-      detections = self.transformationDataDeepSort(results, img)
-    if self.type_model == "StrongSort":
-      detections = self.transformationDataStrongSort(results, img)
-    if self.type_model == "ByteTracker":
-      detections = self.transformationDataByteTracker(results, img)
-    if self.type_model == "BotSort":
-      detections = self.transformationDataBotSort(results, img)
-    return self.trackingDataObject(detections = detections)
+  def update_tracking(self, results, frame):
+    # detections = None
+    # if self.type_model == "DeepSort":
+    #   detections = self.transformationDataDeepSort(results, img)
+    # if self.type_model == "StrongSort":
+      detections = self.transformationDataStrongSort(results, frame)
+    # if self.type_model == "ByteTracker":
+    #   detections = self.transformationDataByteTracker(results, img)
+    # if self.type_model == "BotSort":
+    #   detections = self.transformationDataBotSort(results, img)
+      return self.trackingDataObject(detections = detections)
 
 
   """
@@ -162,15 +162,15 @@ class TrackingService:
   Arrays have form is: [boundingbox, conf, class, img, frame]
   """
   def transformationDataInputTracking(self, results, img):
-    if self.type_model == "DeepSort":
-      return self.transformationDataDeepSort(results, img)
-    if self.type_model == "StrongSort":
+    # if self.type_model == "DeepSort":
+    #   return self.transformationDataDeepSort(results, img)
+    # if self.type_model == "StrongSort":
       return self.transformationDataStrongSort(results, img)
-    if self.type_model == "ByteTracker":
-      return self.transformationDataByteTracker(results, img)
-    if self.type_model == "BotSort":
-      return self.transformationDataBotSort(results, img)
-    return None
+    # if self.type_model == "ByteTracker":
+    #   return self.transformationDataByteTracker(results, img)
+    # if self.type_model == "BotSort":
+    #   return self.transformationDataBotSort(results, img)
+    # return None
     #
     #
   """
@@ -205,10 +205,9 @@ class TrackingService:
       return results
 
   "results.append([xyxy, conf, cls])"
-  def transformationDataStrongSort(self, results, img):
+  def transformationDataStrongSort(self, results, frame):
     if self.run_original:
       detection = []
-      frame = cv2.imread(img)
       for result in results:
         for i in result.boxes:
           xyxy = self.to_xyxy(i)
@@ -243,36 +242,36 @@ class TrackingService:
 
   def trackingDataObject(self, detections):
     if self.run_original:
-      if self.type_model == "DeepSort":
-        return self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
-      if self.type_model == "StrongSort":
+      # if self.type_model == "DeepSort":
+      #   return self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
+      # if self.type_model == "StrongSort":
         return self.model.update(dets=detections['detections'], ori_img=detections['frame'])
-      if self.type_model == "ByteTracker":
-        return self.model.update(results=detections['detections'], img=detections['img'])
-      if self.type_model == "BotSort":
-        for detection in detections['detections']:
-          dataInitTrack = self.model.init_track(dets=detection[0],
-                                                scores=[detection[1]],
-                                                cls=[detection[2]],
-                                                img=detections['img'])
-          self.model.multi_predict(dataInitTrack)
+      # if self.type_model == "ByteTracker":
+      #   return self.model.update(results=detections['detections'], img=detections['img'])
+      # if self.type_model == "BotSort":
+      #   for detection in detections['detections']:
+      #     dataInitTrack = self.model.init_track(dets=detection[0],
+      #                                           scores=[detection[1]],
+      #                                           cls=[detection[2]],
+      #                                           img=detections['img'])
+      #     self.model.multi_predict(dataInitTrack)
     else:
-      if self.type_model == "DeepSort":
-        tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
-        return self.transformResultsTrackingDeepSort(tracking, detections['embeds'] )
-      if self.type_model == "StrongSort":
+      # if self.type_model == "DeepSort":
+      #   tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
+      #   return self.transformResultsTrackingDeepSort(tracking, detections['embeds'] )
+      # if self.type_model == "StrongSort":
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
         return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
-      if self.type_model == "ByteTracker":
-        return self.model.update(results = detections['detections'], img = detections['img'])
-      if self.type_model == "BotSort":
-        for detection in detections['detections']:
-          dataInitTrack = self.model.init_track(dets = detection[0],
-                                          scores = [detection[1]],
-                                          cls = [detection[2]],
-                                          img = detections['img'])
-          self.model.multi_predict(dataInitTrack)
-      return None
+      # if self.type_model == "ByteTracker":
+      #   return self.model.update(results = detections['detections'], img = detections['img'])
+      # if self.type_model == "BotSort":
+      #   for detection in detections['detections']:
+      #     dataInitTrack = self.model.init_track(dets = detection[0],
+      #                                     scores = [detection[1]],
+      #                                     cls = [detection[2]],
+      #                                     img = detections['img'])
+      #     self.model.multi_predict(dataInitTrack)
+      # return None
 
   def to_xywh(self,box):
     x = float(box.xywh.cpu().numpy()[0][0])
@@ -296,26 +295,23 @@ class TrackingService:
     return box.cls.cpu().numpy()[0]
 
   def filterTrackingDetections(self,detections):
-    if self.type_model == "DeepSort":
-      return self.filterTrackingDetectionsDeepSort(detections)
-    if self.type_model == "StrongSort":
+    # if self.type_model == "DeepSort":
+    #   return self.filterTrackingDetectionsDeepSort(detections)
+    # if self.type_model == "StrongSort":
       return self.filterTrackingDetectionsStrongSort(detections)
-    if self.type_model == "ByteTracker":
-      return self.filterTrackingDetectionsByteTracker(detections)
-    if self.type_model == "BotSort":
-      return self.filterTrackingDetectionsBotSort(detections)
+    # if self.type_model == "ByteTracker":
+    #   return self.filterTrackingDetectionsByteTracker(detections)
+    # if self.type_model == "BotSort":
+    #   return self.filterTrackingDetectionsBotSort(detections)
 
   def filterTrackingDetectionsDeepSort(self,detections):
     store_matched_flags = [False] * len(self.DETECTIONS_STORES)
+    store_matched_detections = [False] * len(detections['detections'])
     if not self.DETECTIONS_STORES:
       return detections
     else:
       for index, embed in enumerate(detections['embeds']):
-        matched = False
         embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
-
-        # detection = {((xyxy,conf, cls, 0, 0)) and embeds}
-        # Detection_stores = [tracking_id, max_age, embeds]
         for idx, detection_store in enumerate(self.DETECTIONS_STORES):
           embed_store = torch.tensor(np.array(detection_store[2])).unsqueeze(0)
 
@@ -323,12 +319,16 @@ class TrackingService:
             self.DETECTIONS_STORES[idx][2] = embed
             self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
             detections['detections'][index][4] = self.DETECTIONS_STORES[idx][0]
-            matched = True
             store_matched_flags[idx] = True
+            store_matched_detections[index] = True
             break
-        if not matched:
-          del detections['detections'][index]
-          del detections['embeds'][index]
+    len_matched = 0
+
+    for idx, matched in enumerate(store_matched_detections):
+      if matched:
+        del detections['detections'][idx - len_matched]
+        np.delete(detections['embeds'], idx - len_matched, axis=0)
+        len_matched += 1
 
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
@@ -346,8 +346,8 @@ class TrackingService:
 
     store_matched_flags = [False] * len(self.DETECTIONS_STORES)
     un_mask = torch.ones(detections['embeds'].size(0), dtype=torch.bool)
+
     for index, embed in enumerate(detections['embeds']):
-      matched = False
       embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
 
       for idx, store in enumerate(self.DETECTIONS_STORES):
@@ -357,12 +357,9 @@ class TrackingService:
           self.DETECTIONS_STORES[idx][2] = embed
           self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
           detections['detections'][index][6] = self.DETECTIONS_STORES[idx][0]
-          matched = True
           store_matched_flags[idx] = True
+          un_mask[index] = True
           break
-      if not matched:
-        un_mask[index] = True
-
     detections['embeds'] = detections['embeds'][~un_mask]
     detections['detections'] = detections['detections'][~un_mask]
     for idx, matched in enumerate(store_matched_flags):
@@ -441,22 +438,22 @@ class TrackingService:
 
   def updateFilterTracking(self, detections, results_tracking_un_matched):
     if len(results_tracking_un_matched) != 0:
-      if self.type_model == "DeepSort":
-        for index, detection_un_matched in enumerate(results_tracking_un_matched):
-          if detection_un_matched[0] is not None:
-            detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1]]
-            self.DETECTIONS_STORES.append(detection)
-      if self.type_model == "StrongSort":
+      # if self.type_model == "DeepSort":
+      #   for index, detection_un_matched in enumerate(results_tracking_un_matched):
+      #     if detection_un_matched[0] is not None:
+      #       detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1]]
+      #       self.DETECTIONS_STORES.append(detection)
+      # if self.type_model == "StrongSort":
         for index, detection_un_matched in enumerate(results_tracking_un_matched):
           """results_tracking_un_matched = ([track_id, embed])"""
           """Detection stores: [track_id,max_age,embed])"""
           if detection_un_matched[0] is not None:
             detection = [detection_un_matched[0], self.INIT_MAX_AGE, detection_un_matched[1]]
             self.DETECTIONS_STORES.append(detection)
-      if self.type_model == "ByteTracker":
-        return self.filterTrackingDetectionsByteTracker(detections)
-      if self.type_model == "BotSort":
-        return self.filterTrackingDetectionsBotSort(detections)
+      # if self.type_model == "ByteTracker":
+      #   return self.filterTrackingDetectionsByteTracker(detections)
+      # if self.type_model == "BotSort":
+      #   return self.filterTrackingDetectionsBotSort(detections)
 
   def transformResultsTrackingDeepSort(self, resultsTracking,embeds):
     trackings = []

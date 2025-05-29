@@ -23,7 +23,7 @@ def main(run_original = True):
     """"
       BotSort tam thoi dung lai, can phai xem lai BotSort
     """
-    type_model_tracking = typeTracking[2]
+    type_model_tracking = typeTracking[1]
     # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
     run_original = run_original
@@ -34,32 +34,29 @@ def main(run_original = True):
 
     imgs = loadDataset()
     i = 0
-    aver_time = 0
-    loop_test = 5
+    loop_test = 20
+    total_time = 0
     print("i = {}".format(i))
     for i in range(loop_test):
         time_start = time.time()
         for img in imgs:
+            frame = cv2.imread(img)
             results = detectionModel.predict(img)
+            start_track = time.time()
+            # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            #------------------------------------------------------------------------------------------------------
+            detectionsTransform = detectionModel.transformResults(results, frame)
+            detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+            if len(detectionsFilter['detections']) > 0:
+                    # result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
+                    trackingModel.updateFilterTracking(detectionsFilter, trackingModel.update_tracking(detectionsFilter,frame))
+            #
+            total_time += (time.time() - start_track)
 
-            if run_original:
-                result_tracking = trackingModel.trackingDataObject(
-                    trackingModel.transformationDataInputTracking(results, img))
-            else:
-                detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-                detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-                if len(detectionsFilter['detections']) > 0:
-                    result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,img)
-                    trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
+            # resultFacial = facialModel.extractionFacial(img = img)
+            # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
 
-                # resultFacial = facialModel.extractionFacial(img = img)
-                # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
-
-
-        time_end = time.time()
-        aver_time += time_end - time_start
-    print("Total time average is {}".format(aver_time/loop_test))
-
+    print("Total time   average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = True)
+    main(run_original = False)

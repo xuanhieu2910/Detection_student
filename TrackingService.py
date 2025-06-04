@@ -29,6 +29,7 @@ class TrackingService:
   DETECTIONS_STORES = []
   MAX_AGE = 30
   INIT_MAX_AGE = 1
+  MATCH_THRESHOLD = 0.8
 
 
   def __init__(self, typeModelTracking, run_original):
@@ -106,10 +107,9 @@ class TrackingService:
     parser.add_argument("--track_buffer", type=int, default=loadConfig['track_buffer'], help="the frames for keep lost tracks")
     parser.add_argument("--match_thresh", type=float, default=loadConfig['match_thresh'], help="matching threshold for tracking")
     parser.add_argument('--min_box_area', type=float, default=10, help='filter out tiny boxes')
-    max_age = loadConfig['track_buffer']
-    n_init = loadConfig['n_init']
-    self.MAX_AGE = max_age
-    self.INIT_MAX_AGE = n_init
+    self.MAX_AGE = loadConfig['track_buffer']
+    self.INIT_MAX_AGE = loadConfig['n_init']
+    self.MATCH_THRESHOLD = loadConfig['match_thresh']
     return BYTETracker(parser.parse_args())
 
 
@@ -121,7 +121,7 @@ class TrackingService:
       detections = self.transformationDataStrongSort(results, frame)
     if self.type_model == "ByteTracker":
       detections = self.transformationDataByteTracker(results, frame)
-      return self.trackingDataObject(detections = detections)
+    return self.trackingDataObject(detections = detections)
 
 
   """
@@ -197,16 +197,12 @@ class TrackingService:
 
   def transformationDataByteTracker(self, results, frame):
     if self.run_original:
-      detection = []
-      for result in results:
-        for i in result.boxes:
-          xyxy = self.to_xyxy(i)
-          detection.append([xyxy[0], xyxy[1], xyxy[2], xyxy[3]])
       return {
         "detections": results[0].boxes,
-        "detections_ts": np.array(detection),
         "frame": frame
       }
+    else:
+      return results
 
   def trackingDataObject(self, detections):
     if self.run_original:
@@ -216,6 +212,7 @@ class TrackingService:
         return self.model.update(dets=detections['detections'], ori_img=detections['frame'])
       if self.type_model == "ByteTracker":
         return self.model.update(results=detections['detections'], img=detections['frame'])
+
     else:
       if self.type_model == "DeepSort":
         tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
@@ -224,7 +221,8 @@ class TrackingService:
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
         return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
       if self.type_model == "ByteTracker":
-        return self.model.update(results = detections['detections'], img = detections['img'])
+        tracking = self.model.update(results = detections['detections'], img = detections['frame'])
+        return self.transformResultsTrackingByteTrack(tracking, detections['detections_ts'])
       return None
 
   def to_xywh(self,box):
@@ -240,7 +238,6 @@ class TrackingService:
     x2 = float(box.xyxy.cpu().numpy()[0][2])
     y2 = float(box.xyxy.cpu().numpy()[0][3])
     return [x1,y1,x2,y2]
-
   
   def to_conf(self,box):
     return box.conf.cpu().numpy()[0]
@@ -324,37 +321,40 @@ class TrackingService:
     return detections
 
 
-  def filterTrackingDetectionsByteTracker(self,detections):
-    detections_un_matched = []
-    detections_max_age = []
-    if len(self.DETECTIONS_STORES) < 1:
-      return {
-        "detections_un_matched": detections,
-        "detections_max_age": detections_max_age
-      }
-    else:
-      for detectionStore in self.DETECTIONS_STORES:
-        if detectionStore[6] >= self.MAX_AGE:
-          detectionStore[6] = int(self.INIT_MAX_AGE)
-          detections_max_age.append(detectionStore)
-        else:
-          detectionStore[6] += 1
+    # "detections": detections[0].boxes,                                       track_id, max_age
+    # "detections_ts": [torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), i, 0, 0]
+    # "frame": frame
 
-    for detection in detections:
-      matched = False
-      for detectionStore in self.DETECTIONS_STORES:
-        if self.comparativeService.is_matched(torch.tensor(np.array(detection[3])).unsqueeze(0),
-                                              torch.tensor(np.array(detectionStore[3])).unsqueeze(0)):
-          detectionStore[5][3] = detection[5][3] # Update feature
-          detection[5] = detectionStore[5]
-          matched = True
+  def filterTrackingDetectionsByteTracker(self,detections):
+    if not self.DETECTIONS_STORES:
+      return detections
+    store_matched_flags = [False] * len(self.DETECTIONS_STORES)
+    store_matched_detections = [False] * len(detections['detections_ts'])
+
+    for index, detection in enumerate(detections['detections_ts']):
+      for idx, store in enumerate(self.DETECTIONS_STORES):
+        if ops.box_iou(detection[0], store[0]).numpy()[0][0] >= self.MATCH_THRESHOLD:
+          self.DETECTIONS_STORES[idx][0] = detection[0]
+          self.DETECTIONS_STORES[idx][3] = self.INIT_MAX_AGE
+          detections['detections_ts'][index][2] = self.DETECTIONS_STORES[idx][1]
+          store_matched_flags[idx] = True
+          store_matched_detections[index] = True
           break
+    len_matched = 0
+    for idx, matched in enumerate(store_matched_detections):
+      if matched:
+        del detections['detections'][idx - len_matched]
+        del detections['detections_ts'][idx - len_matched]
+        len_matched += 1
+
+    for idx, matched in enumerate(store_matched_flags):
       if not matched:
-        detections_un_matched.append(detection)
-    return {
-      "detections_un_matched": detections_un_matched,
-      "detections_max_age": detections_max_age
-    }
+        self.DETECTIONS_STORES[idx][2] += 1
+
+    self.DETECTIONS_STORES = [
+      store for store in self.DETECTIONS_STORES if store[2] < self.MAX_AGE
+    ]
+    return detections
 
   def filterTrackingDetectionsBotSort(self,detections):
     detections_un_matched = []
@@ -404,15 +404,23 @@ class TrackingService:
             self.DETECTIONS_STORES.append(detection)
 
       if self.type_model == "ByteTracker":
-        return self.filterTrackingDetectionsByteTracker(detections)
+        for index, detection_un_matched in enumerate(results_tracking_un_matched):
+          if detection_un_matched[0] is not None:
+            detection = [detection_un_matched[0] , self.INIT_MAX_AGE, detection_un_matched[4]]
+            self.DETECTIONS_STORES.append(detection)
 
 
-  def transformResultsTrackingDeepSort(self, resultsTracking,embeds):
+  def transformResultsTrackingDeepSort(self, results_tracking, embeds):
     trackings = []
-    min_len = min(len(resultsTracking), len(embeds))
+    print(f"Length {len(embeds)}")
+    min_len = min(len(results_tracking), len(embeds))
+    print(f"Tracking:")
+    for track in results_tracking:
+      print(f"{track.to_ltwh()} - {track.track_id} - {track.is_confirmed()}")
     for index in range(min_len):
-      if resultsTracking[index].track_id is not None and resultsTracking[index].is_confirmed():
-        trackings.append([resultsTracking[index].track_id, embeds[index]])
+      if results_tracking[index].track_id is not None and results_tracking[index].is_confirmed():
+        print(f"tracking id: {results_tracking[index].track_id}")
+        trackings.append([results_tracking[index].track_id, embeds[index]])
     return trackings
 
   def transformResultsTrackingStrongSort(self, resultsTracking, embeds):
@@ -427,6 +435,16 @@ class TrackingService:
 
     return trackings
 
+  def transformResultsTrackingByteTrack(self, resultsTracking, detectionsTransform):
+    trackings = []
+    min_len = min(len(resultsTracking), len(detectionsTransform))
+
+    print(f"Result tracking: {resultsTracking}")
+
+    for index in range(min_len):
+      if resultsTracking[index][4] is not None :
+        trackings.append([results_tracking[index].track_id, embeds[index]])
+    return trackings
 
   def toSort(self, trackings):
       return sorted(trackings, key=lambda x: x[0][0], reverse=True)

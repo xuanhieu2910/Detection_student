@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test2"
+    pathRootDataset = "dataset\\Test"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -21,7 +21,7 @@ def loadDataset():
 def main(run_original = True):
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
 
-    type_model_tracking = typeTracking[2]
+    type_model_tracking = typeTracking[0]
     # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
     run_original = run_original
@@ -44,8 +44,9 @@ def main(run_original = True):
             detectionsTransform = detectionModel.transformResults(results, frame)
             detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
             if len(detectionsFilter['detections']) > 0:
-                    # result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
-                    trackingModel.updateFilterTracking(detectionsFilter, trackingModel.update_tracking(detectionsFilter,frame))
+                    print(f"Detection filter: {detectionsFilter['detections']}")
+                    result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
+                    trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
             #
             total_time += (time.time() - start_track)
 
@@ -55,4 +56,4 @@ def main(run_original = True):
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = True)
+    main(run_original = False)

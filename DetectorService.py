@@ -62,10 +62,6 @@ class DetectorService:
 
       features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
 
-      # # Gộp kết quả
-      # for (xyxy, conf, cls), feat in zip(xyxy_list, features):
-      #     results.append([xyxy, conf, cls, feat, 0, 0])
-
       return {
           "detections": xyxy_list,
           "frame": frame,
@@ -92,25 +88,16 @@ class DetectorService:
 
 
   def transform_result_to_byte_tracker(self, detections, frame):
-      results = []
-      crops = []
-      xyxy_list = []
-
-      for detection in detections:
-          for box in detection.boxes:
-              box = box
-              xyxy = self.to_xyxy(box)
-              xywh = self.to_xywh(box)
-              # Lưu thông tin crop để xử lý batch sau
-              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
-              crops.append(crop)
-              xyxy_list.append((xyxy, xywh, box))
-
-      # Gộp kết quả
-      for (xyxy, xywh, box), feat in zip(xyxy_list):
-          results.append([xyxy, xywh, box, feat, 0, 0])
-
-      return self.toSort(results)
+      detection = []
+      for result in detections:
+          for i, data in enumerate(result.boxes):
+              xyxy = self.to_xyxy(data)
+              detection.append([ torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), i , 0, 0])
+      return {
+          "detections": detections[0].boxes,
+          "detections_ts": detection,
+          "frame": frame
+      }
 
   def transform_result_to_bot_sort(self, detections, frame):
       results = []

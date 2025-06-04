@@ -410,17 +410,13 @@ class TrackingService:
             self.DETECTIONS_STORES.append(detection)
 
 
-  def transformResultsTrackingDeepSort(self, results_tracking, embeds, position):
+  def transformResultsTrackingDeepSort(self, results_tracking):
     trackings = []
-    print(f"Length {len(embeds)}")
-    min_len = min(len(results_tracking), len(embeds))
-    print(f"Tracking:")
-    for track in results_tracking:
-      print(f"{track.to_ltwh()} - {track.track_id} - {track.is_confirmed()}")
-    for index in range(min_len):
-      idx = position[index]
-      if results_tracking[idx].track_id is not None and results_tracking[idx].is_confirmed():
-        trackings.append([results_tracking[idx].track_id, embeds[index]])
+    for index in range(results_tracking):
+      if (results_tracking[index].track_id is not None and
+              results_tracking[index].is_confirmed() and
+              results_tracking[index].age == self.INIT_MAX_AGE):
+        trackings.append([results_tracking[index].track_id, results_tracking[index].features])
     return trackings
 
   def transformResultsTrackingStrongSort(self, resultsTracking, embeds):

@@ -272,14 +272,12 @@ class TrackingService:
             store_matched_detections[index] = True
             break
     len_matched = 0
-    position = []
     for idx, matched in enumerate(store_matched_detections):
       if matched:
         del detections['detections'][idx - len_matched]
         np.delete(detections['embeds'], idx - len_matched, axis=0)
+        del detections['position'][idx - len_matched]
         len_matched += 1
-      else:
-        position.append(idx)
 
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
@@ -288,7 +286,6 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    detections['position'] = position
     return detections
 
 

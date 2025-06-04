@@ -49,6 +49,7 @@ class DetectorService:
   def transform_result_to_deep_sort(self, detections, frame):
       crops = []
       xyxy_list = []
+      position = []
       for detection in detections:
           idx = 0
           for box in detection.boxes:
@@ -59,12 +60,15 @@ class DetectorService:
               crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
               crops.append(crop)
               xyxy_list.append([xyxy,conf, cls, 0, 0])
+              position.append(idx)
+              idx += 1
       features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
 
       return {
           "detections": xyxy_list,
           "frame": frame,
-          "embeds": features
+          "embeds": features,
+          "position": position,
       }
 
   def transform_result_to_strong_sort(self, detections, frame):

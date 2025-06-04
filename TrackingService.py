@@ -216,7 +216,7 @@ class TrackingService:
     else:
       if self.type_model == "DeepSort":
         tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
-        return self.transformResultsTrackingDeepSort(tracking, detections['embeds'] )
+        return self.transformResultsTrackingDeepSort(tracking, detections['embeds'], detections['position'])
       if self.type_model == "StrongSort":
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
         return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
@@ -272,12 +272,14 @@ class TrackingService:
             store_matched_detections[index] = True
             break
     len_matched = 0
-
+    position = []
     for idx, matched in enumerate(store_matched_detections):
       if matched:
         del detections['detections'][idx - len_matched]
         np.delete(detections['embeds'], idx - len_matched, axis=0)
         len_matched += 1
+      else:
+        position.append(idx)
 
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
@@ -286,6 +288,7 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
+    detections['position'] = position
     return detections
 
 
@@ -410,7 +413,7 @@ class TrackingService:
             self.DETECTIONS_STORES.append(detection)
 
 
-  def transformResultsTrackingDeepSort(self, results_tracking, embeds):
+  def transformResultsTrackingDeepSort(self, results_tracking, embeds, position):
     trackings = []
     print(f"Length {len(embeds)}")
     min_len = min(len(results_tracking), len(embeds))
@@ -418,9 +421,9 @@ class TrackingService:
     for track in results_tracking:
       print(f"{track.to_ltwh()} - {track.track_id} - {track.is_confirmed()}")
     for index in range(min_len):
-      if results_tracking[index].track_id is not None and results_tracking[index].is_confirmed():
-        print(f"tracking id: {results_tracking[index].track_id}")
-        trackings.append([results_tracking[index].track_id, embeds[index]])
+      idx = position[index]
+      if results_tracking[idx].track_id is not None and results_tracking[idx].is_confirmed():
+        trackings.append([results_tracking[idx].track_id, embeds[index]])
     return trackings
 
   def transformResultsTrackingStrongSort(self, resultsTracking, embeds):

@@ -50,16 +50,15 @@ class DetectorService:
       crops = []
       xyxy_list = []
       for detection in detections:
+          idx = 0
           for box in detection.boxes:
               xyxy = self.to_xyxy(box)
               conf = self.to_conf(box)
               cls = self.to_cls(box)
-
               # Lưu thông tin crop để xử lý batch sau
               crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
               crops.append(crop)
               xyxy_list.append([xyxy,conf, cls, 0, 0])
-
       features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
 
       return {

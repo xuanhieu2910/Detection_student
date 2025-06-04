@@ -19,11 +19,9 @@ def loadDataset():
 
 
 def main(run_original = True):
-    typeTracking = ["DeepSort", "StrongSort", "ByteTracker", "BotSort"]
-    """"
-      BotSort tam thoi dung lai, can phai xem lai BotSort
-    """
-    type_model_tracking = typeTracking[1]
+    typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
+
+    type_model_tracking = typeTracking[2]
     # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
     run_original = run_original
@@ -33,17 +31,15 @@ def main(run_original = True):
     # bodyPoseModel = bps.BodyPoseService()
 
     imgs = loadDataset()
-    i = 0
-    loop_test = 20
+    loop_test = 1
     total_time = 0
-    print("i = {}".format(i))
     for i in range(loop_test):
-        time_start = time.time()
         for img in imgs:
             frame = cv2.imread(img)
             results = detectionModel.predict(img)
             start_track = time.time()
             # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            # print(f"After result tracking: {result_tracking}")
             #------------------------------------------------------------------------------------------------------
             detectionsTransform = detectionModel.transformResults(results, frame)
             detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
@@ -56,7 +52,7 @@ def main(run_original = True):
             # resultFacial = facialModel.extractionFacial(img = img)
             # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
 
-    print("Total time   average is {}".format(total_time/loop_test))
+    print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = False)
+    main(run_original = True)

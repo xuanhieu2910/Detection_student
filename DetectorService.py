@@ -38,14 +38,13 @@ class DetectorService:
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
   def transformResults(self, detections, frame):
-      # if self.model_tracking == "DeepSort":
-      #     return self.transform_result_to_deep_sort(detections, frame)
-      # if self.model_tracking == "StrongSort":
+      if self.model_tracking == "DeepSort":
+          return self.transform_result_to_deep_sort(detections, frame)
+      if self.model_tracking == "StrongSort":
           return self.transform_result_to_strong_sort(detections, frame)
-      # if self.model_tracking == "ByteTracker":
-      #     return self.transform_result_to_byte_tracker(detections, frame)
-      # if self.model_tracking == "BotSort":
-      #     return self.transform_result_to_bot_sort(detections, frame)
+      if self.model_tracking == "ByteTracker":
+          return self.transform_result_to_byte_tracker(detections, frame)
+
 
   def transform_result_to_deep_sort(self, detections, frame):
       crops = []

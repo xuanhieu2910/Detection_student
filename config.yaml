@@ -43,6 +43,7 @@ byte_track:
   track_buffer: 30             # buffer to calculate the time when to remove tracks = max_age
   match_thresh: 0.8            # threshold for matching tracks = max_iou_distance
   fuse_score: True             # Whether to fuse confidence scores with the iou distances before matching
+  n_init: 1             # Whether to fuse confidence scores with the iou distances before matching
 #---------------------------------------------------------------------------------------------------------------------------------------
 #Config Bot Sort
 bot_sort:

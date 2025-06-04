@@ -275,7 +275,7 @@ class TrackingService:
     for idx, matched in enumerate(store_matched_detections):
       if matched:
         del detections['detections'][idx - len_matched]
-        np.delete(detections['embeds'], idx - len_matched, axis=0)
+        detections['embeds'] = np.delete(detections['embeds'], idx - len_matched, axis=0)
         del detections['position'][idx - len_matched]
         len_matched += 1
 

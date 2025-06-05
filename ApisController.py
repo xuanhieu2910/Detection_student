@@ -39,7 +39,6 @@ def main(run_original = True):
             results = detectionModel.predict(img)
             start_track = time.time()
             # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
-            # print(f"After result tracking: {result_tracking}")
             #------------------------------------------------------------------------------------------------------
             detectionsTransform = detectionModel.transformResults(results, frame)
             detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
@@ -47,8 +46,8 @@ def main(run_original = True):
                     print(f"Detection filter: {detectionsFilter['detections']}")
                     result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
                     trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
-            #
-            total_time += (time.time() - start_track)
+            # #
+            # total_time += (time.time() - start_track)
 
             # resultFacial = facialModel.extractionFacial(img = img)
             # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)

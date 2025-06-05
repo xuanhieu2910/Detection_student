@@ -238,7 +238,7 @@ class TrackingService:
     x2 = float(box.xyxy.cpu().numpy()[0][2])
     y2 = float(box.xyxy.cpu().numpy()[0][3])
     return [x1,y1,x2,y2]
-  
+
   def to_conf(self,box):
     return box.conf.cpu().numpy()[0]
 
@@ -261,6 +261,8 @@ class TrackingService:
     else:
       for index, embed in enumerate(detections['embeds']):
         embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
+
+
         for idx, detection_store in enumerate(self.DETECTIONS_STORES):
           embed_store = torch.tensor(np.array(detection_store[2])).unsqueeze(0)
 
@@ -271,17 +273,16 @@ class TrackingService:
             store_matched_flags[idx] = True
             store_matched_detections[index] = True
             break
+
     len_matched = 0
     for idx, matched in enumerate(store_matched_detections):
       if matched:
         del detections['detections'][idx - len_matched]
-        detections['embeds'] = np.delete(detections['embeds'], idx - len_matched, axis=0)
-        del detections['position'][idx - len_matched]
+        detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
         len_matched += 1
 
-    for idx, matched in enumerate(store_matched_flags):
-      if not matched:
-        self.DETECTIONS_STORES[idx][1] += 1
+    for detection_store in self.DETECTIONS_STORES:
+        detection_store[1] += 1
 
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
@@ -355,38 +356,6 @@ class TrackingService:
       store for store in self.DETECTIONS_STORES if store[2] < self.MAX_AGE
     ]
     return detections
-
-  def filterTrackingDetectionsBotSort(self,detections):
-    detections_un_matched = []
-    detections_max_age = []
-    if len(self.DETECTIONS_STORES) < 1:
-      return {
-        "detections_un_matched": detections,
-        "detections_max_age": detections_max_age
-      }
-    else:
-      for detectionStore in self.DETECTIONS_STORES:
-        if detectionStore[6] >= self.MAX_AGE:
-          detectionStore[6] = int(self.INIT_MAX_AGE)
-          detections_max_age.append(detectionStore)
-        else:
-          detectionStore[6] += 1
-
-    for detection in detections:
-      matched = False
-      for detectionStore in self.DETECTIONS_STORES:
-        if self.comparativeService.is_matched(torch.tensor(np.array(detection[3])).unsqueeze(0),
-                                              torch.tensor(np.array(detectionStore[3])).unsqueeze(0)):
-          detectionStore[5][3] = detection[5][3] # Update feature
-          detection[5] = detectionStore[5]
-          matched = True
-          break
-      if not matched:
-        detections_un_matched.append(detection)
-    return {
-      "detections_un_matched": detections_un_matched,
-      "detections_max_age": detections_max_age
-    }
 
   def updateFilterTracking(self, detections, results_tracking_un_matched):
     if len(results_tracking_un_matched) != 0:

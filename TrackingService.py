@@ -215,7 +215,6 @@ class TrackingService:
 
     else:
       if self.type_model == "DeepSort":
-        print(f"Detection filter: {detections['detections']} - {detections['embeds']}")
         tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
         return self.transformResultsTrackingDeepSort(tracking)
       if self.type_model == "StrongSort":
@@ -280,7 +279,7 @@ class TrackingService:
     for idx, matched in enumerate(store_matched_detections):
       if not matched:
         is_boom = True
-        print(detections['detections'][idx])
+        break
         # detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
         # len_matched += 1
 
@@ -385,8 +384,6 @@ class TrackingService:
   def transformResultsTrackingDeepSort(self, results_tracking):
     trackings = []
     for track in results_tracking:
-      print(
-        f"Track detected: {track.to_ltwh()} - id: {track.track_id} - isCf {track.is_confirmed()} - age: {track.age} - hits : {track.hits} - state: {track.state} - time_since_update: {track.time_since_update}")
       if (track.track_id is not None and
               track.is_confirmed() and
               track.age == self.INIT_MAX_AGE):

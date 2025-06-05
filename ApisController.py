@@ -47,7 +47,7 @@ def main(run_original = True):
                     result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
                     trackingModel.updateFilterTracking(result_tracking_un_matched)
             # #
-            # total_time += (time.time() - start_track)
+            total_time += (time.time() - start_track)
 
             # resultFacial = facialModel.extractionFacial(img = img)
             # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)

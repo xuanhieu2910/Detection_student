@@ -38,14 +38,13 @@ def main(run_original = True):
             frame = cv2.imread(img)
             results = detectionModel.predict(img)
             start_track = time.time()
-            # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
             #------------------------------------------------------------------------------------------------------
-            detectionsTransform = detectionModel.transformResults(results, frame)
-            print(f"Detection transform: {detectionsTransform['detections']}")
-            detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-            if len(detectionsFilter) > 0:
-                    result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
-                    trackingModel.updateFilterTracking(result_tracking_un_matched)
+            # detectionsTransform = detectionModel.transformResults(results, frame)
+            # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
+            # if len(detectionsFilter) > 0:
+            #         result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
+            #         trackingModel.updateFilterTracking(result_tracking_un_matched)
             # #
             total_time += (time.time() - start_track)
 
@@ -55,4 +54,4 @@ def main(run_original = True):
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = False)
+    main(run_original = True)

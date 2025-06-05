@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test"
+    pathRootDataset = "dataset\\Test2"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -41,11 +41,11 @@ def main(run_original = True):
             # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
             #------------------------------------------------------------------------------------------------------
             detectionsTransform = detectionModel.transformResults(results, frame)
+            print(f"Detection transform: {detectionsTransform['detections']}")
             detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-            if len(detectionsFilter['detections']) > 0:
-                    print(f"Detection filter: {detectionsFilter['detections']}")
+            if len(detectionsFilter) > 0:
                     result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
-                    trackingModel.updateFilterTracking(detectionsFilter, result_tracking_un_matched)
+                    trackingModel.updateFilterTracking(result_tracking_un_matched)
             # #
             # total_time += (time.time() - start_track)
 

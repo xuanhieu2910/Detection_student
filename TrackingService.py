@@ -215,8 +215,9 @@ class TrackingService:
 
     else:
       if self.type_model == "DeepSort":
+        print(f"Detection filter: {detections['detections']} - {detections['embeds']}")
         tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
-        return self.transformResultsTrackingDeepSort(tracking, detections['embeds'], detections['position'])
+        return self.transformResultsTrackingDeepSort(tracking)
       if self.type_model == "StrongSort":
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
         return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
@@ -256,7 +257,7 @@ class TrackingService:
   def filterTrackingDetectionsDeepSort(self,detections):
     store_matched_flags = [False] * len(self.DETECTIONS_STORES)
     store_matched_detections = [False] * len(detections['detections'])
-    if not self.DETECTIONS_STORES:
+    if len(self.DETECTIONS_STORES) == 0:
       return detections
     else:
       for index, embed in enumerate(detections['embeds']):
@@ -274,20 +275,23 @@ class TrackingService:
             store_matched_detections[index] = True
             break
 
-    len_matched = 0
+    # len_matched = 0
+    is_boom = False
     for idx, matched in enumerate(store_matched_detections):
-      if matched:
-        del detections['detections'][idx - len_matched]
-        detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
-        len_matched += 1
+      if not matched:
+        is_boom = True
+        print(detections['detections'][idx])
+        # detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
+        # len_matched += 1
 
-    for detection_store in self.DETECTIONS_STORES:
-        detection_store[1] += 1
+    for idx, matched in enumerate(store_matched_flags):
+      if not matched:
+        self.DETECTIONS_STORES[idx][1] += 1
 
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    return detections
+    return detections if is_boom else []
 
 
   def filterTrackingDetectionsStrongSort(self,detections):
@@ -357,9 +361,8 @@ class TrackingService:
     ]
     return detections
 
-  def updateFilterTracking(self, detections, results_tracking_un_matched):
+  def updateFilterTracking(self, results_tracking_un_matched):
     if len(results_tracking_un_matched) != 0:
-
       if self.type_model == "DeepSort":
         for index, detection_un_matched in enumerate(results_tracking_un_matched):
           if detection_un_matched[0] is not None:
@@ -381,11 +384,13 @@ class TrackingService:
 
   def transformResultsTrackingDeepSort(self, results_tracking):
     trackings = []
-    for index in range(results_tracking):
-      if (results_tracking[index].track_id is not None and
-              results_tracking[index].is_confirmed() and
-              results_tracking[index].age == self.INIT_MAX_AGE):
-        trackings.append([results_tracking[index].track_id, results_tracking[index].features])
+    for track in results_tracking:
+      print(
+        f"Track detected: {track.to_ltwh()} - id: {track.track_id} - isCf {track.is_confirmed()} - age: {track.age} - hits : {track.hits} - state: {track.state} - time_since_update: {track.time_since_update}")
+      if (track.track_id is not None and
+              track.is_confirmed() and
+              track.age == self.INIT_MAX_AGE):
+        trackings.append([track.track_id, track.features[0]])
     return trackings
 
   def transformResultsTrackingStrongSort(self, resultsTracking, embeds):
@@ -402,13 +407,6 @@ class TrackingService:
 
   def transformResultsTrackingByteTrack(self, resultsTracking, detectionsTransform):
     trackings = []
-    min_len = min(len(resultsTracking), len(detectionsTransform))
-
-    print(f"Result tracking: {resultsTracking}")
-
-    for index in range(min_len):
-      if resultsTracking[index][4] is not None :
-        trackings.append([results_tracking[index].track_id, embeds[index]])
     return trackings
 
   def toSort(self, trackings):

@@ -14,7 +14,7 @@ yolo:
 # Config DeepSort
 deep_sort:
   max_iou_distance: 0.7 
-  max_age: 30           # Maximum number of missed misses before a track is deleted.
+  max_age: 10           # Maximum number of missed misses before a track is deleted.
   n_init: 3             # Number of frames that a track remains in initialization phase.
   max_dist: 0.2
   nn_budget: 100

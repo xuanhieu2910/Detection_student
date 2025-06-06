@@ -96,7 +96,6 @@ class DetectorService:
           for data in result.boxes:
               xyxy = self.to_xyxy(data)
               conf = float("{:.4f}".format(round(float(self.to_conf(data).item()), 4)))
-              # Bounding box | conf | tracking-id | is_matched
               detection.append([torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), conf, 0, False])
       return {
           "detections": detections[0].boxes,
@@ -128,16 +127,6 @@ class DetectorService:
 
       return self.toSort(results)
 
-  # def transformResultsRoot(self, detections, frame):
-  #     results = []
-  #     for detection in detections:
-  #         for i in detection.boxes:
-  #           xyxy = self.to_xyxy(i)
-  #           conf = self.to_conf(i)
-  #           cls = self.to_cls(i)
-  #           results.append([xyxy,conf,cls])
-  #     return self.toSort(results)
-
   def to_xywh(self, box):
       x = float(box.xywh.cpu().numpy()[0][0])
       y = float(box.xywh.cpu().numpy()[0][1])
@@ -167,7 +156,6 @@ class DetectorService:
       n = len(detections)
       for i in range(n):
           if i != 0 and self.modelComparative.is_matched(detections[i-1][4],detections[i][4]):
-              "Compare confidence, get higher"
               res[len(res) - 1] = detections[i-1] if  detections[i][2] < detections[i-1][2] else detections[i]
           else:
               res.append(detections[i])

@@ -408,12 +408,11 @@ class TrackingService:
   # coords.tolist() + [self.track_id, self.score, self.cls, self.idx]
   def transformResultsTrackingByteTrack(self, resultsTracking, detections):
     trackings = []
-    detections_news = [detectionNew for detectionNew in detections if not detectionNew[3]]
-    for results in resultsTracking:
-        data_conf = float("{:.4f}".format(round(float(results[5]),4)))
-        for detection in detections_news:
-          if math.isclose(data_conf,detection[1]):
-            trackings.append([results[4], detection[0]])
-            break
+    detections_news = [d for d in detections if not d[3]]
+    detection_map = {round(d[1], 4): d[0] for d in detections_news}
+    for result in resultsTracking:
+      conf = round(float(result[5]), 4)
+      if conf in detection_map:
+        trackings.append([result[4], detection_map[conf]])
     return trackings
 

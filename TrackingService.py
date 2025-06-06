@@ -219,7 +219,7 @@ class TrackingService:
         return self.transformResultsTrackingDeepSort(tracking)
       if self.type_model == "StrongSort":
         tracking = self.model.update(dets = detections['detections'], ori_img = detections['frame'], embeds = detections['embeds'])
-        return self.transformResultsTrackingStrongSort(tracking, detections['embeds'])
+        return self.transformResultsTrackingStrongSort(tracking)
       if self.type_model == "ByteTracker":
         tracking = self.model.update(results = detections['detections'], img = detections['frame'])
         return self.transformResultsTrackingByteTrack(tracking, detections['detections_ts'])
@@ -275,10 +275,10 @@ class TrackingService:
             break
 
     # len_matched = 0
-    is_boom = False
+    is_tracking = False
     for idx, matched in enumerate(store_matched_detections):
       if not matched:
-        is_boom = True
+        is_tracking = True
         break
         # detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
         # len_matched += 1
@@ -290,7 +290,7 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    return detections if is_boom else []
+    return detections if is_tracking else []
 
 
   def filterTrackingDetectionsStrongSort(self,detections):
@@ -302,10 +302,8 @@ class TrackingService:
 
     for index, embed in enumerate(detections['embeds']):
       embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
-
       for idx, store in enumerate(self.DETECTIONS_STORES):
-        store_tensor = torch.tensor(np.array(store[2])).unsqueeze(0)
-
+        store_tensor = torch.tensor(np.array(store[2]), dtype=torch.float32).unsqueeze(0)
         if self.comparativeService.is_matched(embed_tensor,store_tensor):
           self.DETECTIONS_STORES[idx][2] = embed
           self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
@@ -313,8 +311,13 @@ class TrackingService:
           store_matched_flags[idx] = True
           un_mask[index] = True
           break
-    detections['embeds'] = detections['embeds'][~un_mask]
-    detections['detections'] = detections['detections'][~un_mask]
+
+    is_tracking = False
+    for idx, matched in enumerate(un_mask):
+      if not matched:
+        is_tracking = True
+        break
+
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
         self.DETECTIONS_STORES[idx][1] += 1
@@ -322,13 +325,15 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    return detections
+    return detections if is_tracking else []
+
+
+
 
 
     # "detections": detections[0].boxes,                                       track_id, max_age
     # "detections_ts": [torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), i, 0, 0]
     # "frame": frame
-
   def filterTrackingDetectionsByteTracker(self,detections):
     if not self.DETECTIONS_STORES:
       return detections
@@ -390,16 +395,11 @@ class TrackingService:
         trackings.append([track.track_id, track.features[0]])
     return trackings
 
-  def transformResultsTrackingStrongSort(self, resultsTracking, embeds):
+  def transformResultsTrackingStrongSort(self, results_tracking):
     trackings = []
-    min_len = min(len(resultsTracking), len(embeds))
-
-    for index in range(min_len):
-      result = resultsTracking[index]
-      embed = embeds[index]
-      track_id = result[4]
-      trackings.append([track_id, embed])
-
+    for track in results_tracking:
+      if track.age == self.INIT_MAX_AGE:
+        trackings.append([track.track_id, track.features[0]])
     return trackings
 
   def transformResultsTrackingByteTrack(self, resultsTracking, detectionsTransform):

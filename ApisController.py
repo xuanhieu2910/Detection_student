@@ -21,7 +21,7 @@ def loadDataset():
 def main(run_original = True):
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
 
-    type_model_tracking = typeTracking[0]
+    type_model_tracking = typeTracking[1]
     # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
     run_original = run_original
@@ -38,14 +38,15 @@ def main(run_original = True):
             frame = cv2.imread(img)
             results = detectionModel.predict(img)
             start_track = time.time()
-            result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+
             #------------------------------------------------------------------------------------------------------
             # detectionsTransform = detectionModel.transformResults(results, frame)
-            # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-            # if len(detectionsFilter) > 0:
-            #         result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
-            #         trackingModel.updateFilterTracking(result_tracking_un_matched)
-            # #
+            detectionsFilter = trackingModel.filterTrackingDetections(detectionModel.transformResults(results, frame))
+            if len(detectionsFilter) > 0:
+                    # result_tracking_un_matched = trackingModel.update_tracking(detectionsFilter,frame)
+                    trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
+            #
             total_time += (time.time() - start_track)
 
             # resultFacial = facialModel.extractionFacial(img = img)
@@ -54,4 +55,4 @@ def main(run_original = True):
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = True)
+    main(run_original = False)

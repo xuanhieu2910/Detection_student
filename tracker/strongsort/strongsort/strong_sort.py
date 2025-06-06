@@ -70,13 +70,18 @@ class StrongSORT(object):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
 
-            box = track.to_tlwh()
-            x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
-
-            track_id = track.track_id
-            class_id = track.class_id
-            conf = track.conf
-            outputs.append(np.array([x1, y1, x2, y2, track_id, class_id, conf]))
+            # box = track.to_tlwh()
+            # x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
+            #
+            # track_id = track.track_id
+            # class_id = track.class_id
+            # conf = track.conf
+            # feature = track.features
+            # print(f"Features: {feature}")
+            # is_confirmed = track.is_confirmed()
+            # age = track.age
+            # outputs.append(np.array([x1, y1, x2, y2, track_id, class_id, conf,is_confirmed,age]))
+            outputs.append(track)
         if len(outputs) > 0:
             outputs = np.stack(outputs, axis=0)
         return outputs

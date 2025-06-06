@@ -38,11 +38,11 @@ class DetectorService:
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
   def transformResults(self, detections, frame):
-      if self.model_tracking == "DeepSort":
-          return self.transform_result_to_deep_sort(detections, frame)
-      if self.model_tracking == "StrongSort":
-          return self.transform_result_to_strong_sort(detections, frame)
-      if self.model_tracking == "ByteTracker":
+      # if self.model_tracking == "DeepSort":
+      #     return self.transform_result_to_deep_sort(detections, frame)
+      # if self.model_tracking == "StrongSort":
+      #     return self.transform_result_to_strong_sort(detections, frame)
+      # if self.model_tracking == "ByteTracker":
           return self.transform_result_to_byte_tracker(detections, frame)
 
 
@@ -93,10 +93,7 @@ class DetectorService:
   def transform_result_to_byte_tracker(self, detections, frame):
       detection = []
       for result in detections:
-          for data in result.boxes:
-              xyxy = self.to_xyxy(data)
-              conf = float("{:.4f}".format(round(float(self.to_conf(data).item()), 4)))
-              detection.append([torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), conf, 0, False])
+        detection.append([result.boxes.xyxy[0], round(float(self.to_conf(result.boxes).item()), 4), 0, False])
       return {
           "detections": detections[0].boxes,
           "detections_ts": detection,

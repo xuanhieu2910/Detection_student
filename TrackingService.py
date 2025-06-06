@@ -1,3 +1,4 @@
+import math
 import sys
 import os
 import time
@@ -274,15 +275,11 @@ class TrackingService:
             store_matched_detections[index] = True
             break
 
-    # len_matched = 0
     is_tracking = False
     for idx, matched in enumerate(store_matched_detections):
       if not matched:
         is_tracking = True
         break
-        # detections['embeds'] = np.delete(detections['embeds'], idx-len_matched, axis=0)
-        # len_matched += 1
-
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
         self.DETECTIONS_STORES[idx][1] += 1
@@ -330,40 +327,44 @@ class TrackingService:
 
 
 
-
-    # "detections": detections[0].boxes,                                       track_id, max_age
-    # "detections_ts": [torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), i, 0, 0]
-    # "frame": frame
+  #detections['detections_ts'] =  Bounding box | conf | tracking_id | is_matched
+  # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
   def filterTrackingDetectionsByteTracker(self,detections):
     if not self.DETECTIONS_STORES:
       return detections
+    store_boxes = torch.stack([store[2] for store in self.DETECTIONS_STORES])  # shape [N_store, 4]
     store_matched_flags = [False] * len(self.DETECTIONS_STORES)
     store_matched_detections = [False] * len(detections['detections_ts'])
 
     for index, detection in enumerate(detections['detections_ts']):
-      for idx, store in enumerate(self.DETECTIONS_STORES):
-        if ops.box_iou(detection[0], store[0]).numpy()[0][0] >= self.MATCH_THRESHOLD:
-          self.DETECTIONS_STORES[idx][0] = detection[0]
-          self.DETECTIONS_STORES[idx][3] = self.INIT_MAX_AGE
-          detections['detections_ts'][index][2] = self.DETECTIONS_STORES[idx][1]
-          store_matched_flags[idx] = True
-          store_matched_detections[index] = True
-          break
-    len_matched = 0
-    for idx, matched in enumerate(store_matched_detections):
-      if matched:
-        del detections['detections'][idx - len_matched]
-        del detections['detections_ts'][idx - len_matched]
-        len_matched += 1
+      det_box = detection[0].unsqueeze(0)
+      ious = ops.box_iou(det_box, store_boxes)[0]
+      max_iou, max_idx = torch.max(ious, dim=0)
+
+      if max_iou >= self.MATCH_THRESHOLD:
+        self.DETECTIONS_STORES[max_idx][0] = detection[0]
+        self.DETECTIONS_STORES[max_idx][1] = self.INIT_MAX_AGE
+        detections['detections_ts'][index][2] = detection[0]
+        detections['detections_ts'][index][3] = True
+
+        store_matched_flags[max_idx] = True
+        store_matched_detections[index] = True
+
+    is_tracking = not all(store_matched_detections)
 
     for idx, matched in enumerate(store_matched_flags):
       if not matched:
-        self.DETECTIONS_STORES[idx][2] += 1
+        self.DETECTIONS_STORES[idx][1] += 1
 
     self.DETECTIONS_STORES = [
-      store for store in self.DETECTIONS_STORES if store[2] < self.MAX_AGE
+      store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    return detections
+
+    return detections if is_tracking else []
+
+
+
+
 
   def updateFilterTracking(self, results_tracking_un_matched):
     if len(results_tracking_un_matched) != 0:
@@ -382,7 +383,7 @@ class TrackingService:
       if self.type_model == "ByteTracker":
         for index, detection_un_matched in enumerate(results_tracking_un_matched):
           if detection_un_matched[0] is not None:
-            detection = [detection_un_matched[0] , self.INIT_MAX_AGE, detection_un_matched[4]]
+            detection = [detection_un_matched[0] , self.INIT_MAX_AGE, detection_un_matched[1]]
             self.DETECTIONS_STORES.append(detection)
 
 
@@ -402,9 +403,17 @@ class TrackingService:
         trackings.append([track.track_id, track.features[0]])
     return trackings
 
-  def transformResultsTrackingByteTrack(self, resultsTracking, detectionsTransform):
+  # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
+  # Bounding box | conf | tracking-id | is_matched
+  # coords.tolist() + [self.track_id, self.score, self.cls, self.idx]
+  def transformResultsTrackingByteTrack(self, resultsTracking, detections):
     trackings = []
+    detections_news = [detectionNew for detectionNew in detections if not detectionNew[3]]
+    for results in resultsTracking:
+        data_conf = float("{:.4f}".format(round(float(results[5]),4)))
+        for detection in detections_news:
+          if math.isclose(data_conf,detection[1]):
+            trackings.append([results[4], detection[0]])
+            break
     return trackings
 
-  def toSort(self, trackings):
-      return sorted(trackings, key=lambda x: x[0][0], reverse=True)

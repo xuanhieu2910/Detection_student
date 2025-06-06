@@ -93,9 +93,11 @@ class DetectorService:
   def transform_result_to_byte_tracker(self, detections, frame):
       detection = []
       for result in detections:
-          for i, data in enumerate(result.boxes):
+          for data in result.boxes:
               xyxy = self.to_xyxy(data)
-              detection.append([ torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), i , 0, 0])
+              conf = float("{:.4f}".format(round(float(self.to_conf(data).item()), 4)))
+              # Bounding box | conf | tracking-id | is_matched
+              detection.append([torch.tensor([xyxy[0], xyxy[1], xyxy[2], xyxy[3]]), conf, 0, False])
       return {
           "detections": detections[0].boxes,
           "detections_ts": detection,

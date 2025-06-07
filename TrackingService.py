@@ -206,15 +206,15 @@ class TrackingService:
       return results
 
   def trackingDataObject(self, detections):
-    # if self.run_original:
+    if self.run_original:
       # if self.type_model == "DeepSort":
       #   return self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'])
       # if self.type_model == "StrongSort":
       #   return self.model.update(dets=detections['detections'], ori_img=detections['frame'])
     #   if self.type_model == "ByteTracker":
-    #     return self.model.update(results=detections['detections'], img=detections['frame'])
+        return self.model.update(results=detections['detections'], img=detections['frame'])
     #
-    # else:
+    else:
       # if self.type_model == "DeepSort":
       #   tracking =  self.model.update_tracks(raw_detections = detections['detections'], frame = detections['frame'],embeds = detections['embeds'])
       #   return self.transformResultsTrackingDeepSort(tracking)
@@ -223,7 +223,7 @@ class TrackingService:
       #   return self.transformResultsTrackingStrongSort(tracking)
       # if self.type_model == "ByteTracker":
         tracking = self.model.update(results = detections['detections'], img = detections['frame'])
-        return self.transformResultsTrackingByteTrack(tracking, detections['detections_ts'])
+        return self.transformResultsTrackingByteTrack(tracking, detections)
       # return None
 
   def to_xywh(self,box):
@@ -329,6 +329,14 @@ class TrackingService:
 
   #detections['detections_ts'] =  Bounding box | conf | tracking_id | is_matched
   # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
+  # return {
+  #   "detections": detections,
+  #   "detections_ts": detections[0].boxes.xyxy,
+  #   "confidence": detections[0].conf,
+  #   "is_matched": [False] * len(detections),
+  #   "tracking_id": [0] * len(detections),
+  #   "frame": frame
+  # }
   def filterTrackingDetectionsByteTracker(self,detections):
     if not self.DETECTIONS_STORES:
       return detections
@@ -337,15 +345,15 @@ class TrackingService:
     store_matched_detections = [False] * len(detections['detections_ts'])
 
     for index, detection in enumerate(detections['detections_ts']):
-      det_box = detection[0].unsqueeze(0)
+      det_box = detection.unsqueeze(0)
       ious = ops.box_iou(det_box, store_boxes)[0]
       max_iou, max_idx = torch.max(ious, dim=0)
 
       if max_iou >= self.MATCH_THRESHOLD:
-        self.DETECTIONS_STORES[max_idx][0] = detection[0]
+        self.DETECTIONS_STORES[max_idx][0] = detection
         self.DETECTIONS_STORES[max_idx][1] = self.INIT_MAX_AGE
-        detections['detections_ts'][index][2] = detection[0]
-        detections['detections_ts'][index][3] = True
+        detections['tracking_id'][index] = store_boxes[0]
+        detections['is_matched'][index] = True
 
         store_matched_flags[max_idx] = True
         store_matched_detections[index] = True
@@ -406,10 +414,22 @@ class TrackingService:
   # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
   # Bounding box | conf | tracking-id | is_matched
   # coords.tolist() + [self.track_id, self.score, self.cls, self.idx]
+  # return {
+  #   "detections": detections,
+  #   "detections_ts": detections[0].boxes.xyxy,
+  #   "confidence": detections[0].conf,
+  #   "is_matched": [False] * len(detections),
+  #   "tracking_id": [0] * len(detections),
+  #   "frame": frame
+  # }
   def transformResultsTrackingByteTrack(self, resultsTracking, detections):
     trackings = []
-    detections_news = [d for d in detections if not d[3]]
-    detection_map = {round(d[1], 4): d[0] for d in detections_news}
+    detection_map = {}
+    for idx, (conf, is_matched, xyxy) in enumerate(zip(detections['confidence'], detections['is_matched'], detections['detections_ts'])):
+      if not is_matched:
+        rounded_conf = round(float(conf), 4)
+        detection_map.setdefault(rounded_conf, xyxy)
+
     for result in resultsTracking:
       conf = round(float(result[5]), 4)
       if conf in detection_map:

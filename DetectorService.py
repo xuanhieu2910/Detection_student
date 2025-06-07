@@ -91,12 +91,14 @@ class DetectorService:
 
 
   def transform_result_to_byte_tracker(self, detections, frame):
-      detection = []
-      for result in detections:
-        detection.append([result.boxes.xyxy[0], round(float(self.to_conf(result.boxes).item()), 4), 0, False])
+
+      detections = detections[0].boxes
       return {
-          "detections": detections[0].boxes,
-          "detections_ts": detection,
+          "detections": detections,
+          "detections_ts": detections.xyxy,
+          "confidence": detections.conf,
+          "is_matched": [False] * len(detections),
+          "tracking_id": [0] * len(detections),
           "frame": frame
       }
 

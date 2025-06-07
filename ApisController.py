@@ -31,7 +31,7 @@ def main(run_original = True):
     # bodyPoseModel = bps.BodyPoseService()
 
     imgs = loadDataset()
-    loop_test = 5
+    loop_test = 1
     total_time = 0
     for i in range(loop_test):
         for img in imgs:
@@ -42,11 +42,12 @@ def main(run_original = True):
             # time_transform = time.time()
             # data_transform = trackingModel.transformationDataInputTracking(results, frame)
             # print(f"Time transformation : {time.time() - time_transform}")
-            result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
             #------------------------------------------------------------------------------------------------------
-            # detectionsFilter = trackingModel.filterTrackingDetections(detectionModel.transformResults(results, frame))
-            # if len(detectionsFilter) > 0:
-            #         trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
+            data = detectionModel.transformResults(results, frame)
+            detectionsFilter = trackingModel.filterTrackingDetections(data)
+            if len(detectionsFilter) > 0:
+                    trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
             total_time += (time.time() - start_track)
 
             # resultFacial = facialModel.extractionFacial(img = img)
@@ -55,6 +56,6 @@ def main(run_original = True):
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = True)
+    main(run_original = False)
     # Upgrade: Total time average is 0.09494891166687011
     # Root: Total time average is 0.1156076431274414

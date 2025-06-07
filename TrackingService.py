@@ -348,7 +348,6 @@ class TrackingService:
       det_box = detection.unsqueeze(0)
       ious = ops.box_iou(det_box, store_boxes)[0]
       max_iou, max_idx = torch.max(ious, dim=0)
-
       if max_iou >= self.MATCH_THRESHOLD:
         self.DETECTIONS_STORES[max_idx][0] = detection
         self.DETECTIONS_STORES[max_idx][1] = self.INIT_MAX_AGE

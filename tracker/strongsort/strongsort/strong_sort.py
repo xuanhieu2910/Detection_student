@@ -1,3 +1,5 @@
+import time
+
 import numpy as np
 import torch
 
@@ -36,7 +38,7 @@ class StrongSORT(object):
         metric = NearestNeighborDistanceMetric("cosine", self.max_dist, nn_budget)
         self.tracker = Tracker(metric, max_iou_distance=max_iou_distance, max_age=max_age, n_init=n_init)
 
-    def update(self, dets, ori_img,embeds = None):
+    def update(self, dets, ori_img, embeds = None):
         xyxys = dets[:, :4]
         xyxys = dets[:, 0:4]
         confs = dets[:, 4]
@@ -46,10 +48,8 @@ class StrongSORT(object):
         xywhs = xyxy2xywh(xyxys.numpy())
         confs = confs.numpy()
         self.height, self.width = ori_img.shape[:2]
-
         # generate detections
-        if (embeds == None):
-            print("Hien tai chua co embed")
+        if embeds is None:
             features = self._get_features(xywhs, ori_img)
         else:
             features = embeds
@@ -70,13 +70,18 @@ class StrongSORT(object):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
 
-            box = track.to_tlwh()
-            x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
-
-            track_id = track.track_id
-            class_id = track.class_id
-            conf = track.conf
-            outputs.append(np.array([x1, y1, x2, y2, track_id, class_id, conf]))
+            # box = track.to_tlwh()
+            # x1, y1, x2, y2 = self._tlwh_to_xyxy(box)
+            #
+            # track_id = track.track_id
+            # class_id = track.class_id
+            # conf = track.conf
+            # feature = track.features
+            # print(f"Features: {feature}")
+            # is_confirmed = track.is_confirmed()
+            # age = track.age
+            # outputs.append(np.array([x1, y1, x2, y2, track_id, class_id, conf,is_confirmed,age]))
+            outputs.append(track)
         if len(outputs) > 0:
             outputs = np.stack(outputs, axis=0)
         return outputs

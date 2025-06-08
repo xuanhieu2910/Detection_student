@@ -1,8 +1,8 @@
 import os
 import cv2
-#import BodyPoseService as bps
+# import BodyPoseService as bps
 import DetectorService as ds
-#import FacialService as fs
+# import FacialService as fs
 import TrackingService as ts
 # import ComparetiveService as cs
 import torch
@@ -18,51 +18,53 @@ def loadDataset():
     return imgs
 
 
-def main():
-    typeTracking = ["DeepSort", "StrongSort", "ByteTracker", "BotSort"]
-    """"
-      BotSort tam thoi dung lai, can phai xem lai BotSort
-    """
+def main(run_original = True):
+    typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
+
+    type_model_tracking = typeTracking[2]
     # initialize
-    tracker_type = "StrongSort"
-    detectionModel = ds.DetectorService("D:\\AnhThienLe\\Intern_CV\\Detection_student\\yolov5nu.pt")
-    trackingModel = ts.TrackingService(tracker_type)
+    detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolov5nu.pt"), type_model_tracking)
+    run_original = run_original
+    trackingModel = ts.TrackingService(type_model_tracking, run_original)
 
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
-
-    # modelCompare = cs.ComparetiveService()
-
-
+    time_update = 0
+    time_transform = 0
+    time_filter = 0
     imgs = loadDataset()
-    time_start = time.time()
+    loop_test = 1
+    total_time = 0
+    for i in range(loop_test):
+        for img in imgs:
+            frame = cv2.imread(img)
+            results = detectionModel.predict(img)
+            start_track = time.time()
+            #-----------------------------------------------------------------------------------
+            # time_transform = time.time()
+            # data_transform = trackingModel.transformationDataInputTracking(results, frame)
+            # print(f"Time transformation : {time.time() - time_transform}")
+            # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
+            #------------------------------------------------------------------------------------------------------
+            data = detectionModel.transformResults(results, frame)
+            time_transform += (time.time()-start_track)
+            b = time.time()
+            detectionsFilter = trackingModel.filterTrackingDetections(data)
+            time_filter += (time.time()-b)
+            c = time.time()
+            if len(detectionsFilter) > 0:
+                    trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
+            time_update+=(time.time()-c)
+            total_time += (time.time() - start_track)
 
-    for img in imgs:
-        results = detectionModel.predict(img)
-        detectionsTransform = detectionModel.transformResults(results, cv2.imread(img),tracker_type)
-        """Option 1"""
-        trackings = trackingModel.trackingDataObjectRoot(trackingModel.transformationDataStrongSort(detectionsTransform, img))
-
-        # for tracking in trackings:
-        #     print(tracking)
-            # print(f"x1: {tracking[0]} - y1: {tracking[1]} - x2: {tracking[2]} - y2: {tracking[3]} - ID: {tracking[4]} - Features: {tracking[5]}")
-        # detectionsTransform = detectionModel.transformResults(results, cv2.imread(img))
-        # for detection in detectionsTransform:
-        #     print(f"xyxy: {detection[0]}- Features: {detection[4]}")
-        # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-        # time_start_a = time.time()
-        # detectionsFilter = trackingModel.filterTrackingDetections(detectionsTransform)
-        # # print("Lần : {} - {}".format(index,time.time()-time_start_a))
-        # if (len(detectionsFilter["detections_max_age"]) > 0):
-        #     trackingModel.update(detectionsFilter["detections_max_age"], img)
-        # if (len(detectionsFilter["detections_un_matched"]) > 0):
-        #     trackings = trackingModel.update(detectionsFilter["detections_un_matched"], img)
-        #     trackingModel.updateFilterTracking(detectionsFilter["detections_un_matched"], trackings)
-
-        # resultFacial = facialModel.extractionFacial(img = img)
-        # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
-    time_end = time.time()
-    print("Time elapsed: " + str(time_end - time_start))
-
+            # resultFacial = facialModel.extractionFacial(img = img)
+            # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
+    print(f"Time transformation : {time_transform}")
+    print(f"Time filter : {time_filter}")
+    print(f"Time update : {time_update}")
+    print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
-    main()
+    # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
+    main(run_original = False)
+    # Upgrade: Total time average is 0.09494891166687011
+    # Root: Total time average is 0.1156076431274414

@@ -1,13 +1,14 @@
 import sys
 import os
+import time
 
 sys.path.append(os.path.abspath("detector_tracker"))
 from ultralytics import YOLO
 import load_config as config
 import ExtractionFeatureService as efs
 import ComparetiveService as compares
-
-
+import torch
+import numpy as np
 
 class DetectorService:
 
@@ -18,10 +19,11 @@ class DetectorService:
   maxDet = loadConfig['max_det']
   classes = loadConfig["classes"]
 
-  def __init__(self, modelWeight):
+  def __init__(self, modelWeight, type_model_tracking):
     self.model = YOLO(modelWeight)
-    self.modelExtraction = efs.ExtractionFeatureService()
+    self.modelExtraction = efs.ExtractionFeatureService(type_model_tracking)
     self.modelComparative = compares.ComparetiveService()
+    self.model_tracking = type_model_tracking
 
   def predict(self, img):
     result =  self.model.predict(img,
@@ -35,42 +37,94 @@ class DetectorService:
   """
     array [xyxy, xywh, conf, cls, extraction, id, max_age]
   """
+  def transformResults(self, detections, frame):
+      # if self.model_tracking == "DeepSort":
+      #     return self.transform_result_to_deep_sort(detections, frame)
+      # if self.model_tracking == "StrongSort":
+      #     return self.transform_result_to_strong_sort(detections, frame)
+      # if self.model_tracking == "ByteTracker":
+          return self.transform_result_to_byte_tracker(detections, frame)
 
-  def transformResults(self, detections, frame, type):
+
+  def transform_result_to_deep_sort(self, detections, frame):
+      crops = []
+      xyxy_list = []
+      position = []
+      for detection in detections:
+          idx = 0
+          for box in detection.boxes:
+              xyxy = self.to_xyxy(box)
+              conf = self.to_conf(box)
+              cls = self.to_cls(box)
+              # Lưu thông tin crop để xử lý batch sau
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+              xyxy_list.append([xyxy,conf, cls, 0, 0])
+              position.append(idx)
+              idx += 1
+      features = self.modelExtraction.extractionFeatureDeepSort(np_images=crops)
+
+      return {
+          "detections": xyxy_list,
+          "frame": frame,
+          "embeds": features,
+          "position": position,
+      }
+
+  def transform_result_to_strong_sort(self, detections, frame):
+      detection = []
+      crops = []
+      for result in detections:
+          for i in result.boxes:
+              xyxy = self.to_xyxy(i)
+              conf = self.to_conf(i)
+              cls = self.to_cls(i)
+              detection.append([xyxy[0], xyxy[1], xyxy[2], xyxy[3], conf, cls, 0, 0])
+              crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
+              crops.append(crop)
+      return {
+          "detections": torch.tensor(detection),
+          "frame": frame,
+          "embeds": self.modelExtraction.extractFeatures(np_images=crops)
+      }
+
+
+
+  def transform_result_to_byte_tracker(self, detections, frame):
+
+      detections = detections[0].boxes
+      return {
+          "detections": detections,
+          "detections_ts": detections.xyxy,
+          "confidence": detections.conf,
+          "is_matched": [False] * len(detections),
+          "tracking_id": [0] * len(detections),
+          "frame": frame
+      }
+
+  def transform_result_to_bot_sort(self, detections, frame):
       results = []
       crops = []
       xyxy_list = []
 
       for detection in detections:
           for box in detection.boxes:
+              box = box
               xyxy = self.to_xyxy(box)
               xywh = self.to_xywh(box)
-              conf = self.to_conf(box)
-              cls = self.to_cls(box)
-
               # Lưu thông tin crop để xử lý batch sau
               crop = frame[int(xyxy[1]):int(xyxy[3]), int(xyxy[0]):int(xyxy[2])]
               crops.append(crop)
-              xyxy_list.append((xyxy,xywh, conf, cls))
+              xyxy_list.append((xyxy, xywh, box))
 
       # Chạy batch extraction một lần duy nhất
      
       features = self.modelExtraction.extraction_feature(np_images=crops, type = type)
 
       # Gộp kết quả
-      for (xyxy,xywh, conf, cls), feat in zip(xyxy_list, features):
-          results.append([xyxy,xywh, conf, cls,feat ])
+      for (xyxy, xywh, box), feat in zip(xyxy_list, features):
+          results.append([xyxy, xywh, box, feat, 0, 0])
 
-      return self.toSort(results)
-
-  def transformResultsRoot(self, detections, frame):
-      results = []
-      for detection in detections:
-          for i in detection.boxes:
-            xyxy = self.to_xyxy(i)
-            conf = self.to_conf(i)
-            cls = self.to_cls(i)
-            results.append([xyxy,conf,cls])
       return self.toSort(results)
 
   def to_xywh(self, box):
@@ -102,11 +156,10 @@ class DetectorService:
       n = len(detections)
       for i in range(n):
           if i != 0 and self.modelComparative.is_matched(detections[i-1][4],detections[i][4]):
-              "Compare confidence, get higher"
               res[len(res) - 1] = detections[i-1] if  detections[i][2] < detections[i-1][2] else detections[i]
           else:
               res.append(detections[i])
       return res
 
   def toSort(self, detections):
-      return sorted(detections, key=lambda x: x[0][0], reverse=False)
+      return sorted(detections, key=lambda x: x[0][0], reverse=True)

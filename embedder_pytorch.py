@@ -4,14 +4,7 @@ import sys
 import numpy as np
 import pkg_resources
 import torch
-
 logger = logging.getLogger(__name__)
-
-#
-# TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS = pkg_resources.resource_filename(
-#    "deep_sort_real_time", "embedder/weights/osnet_ain_ms_d_c_wtsonly.pth"
-# )
-
 INPUT_WIDTH = 224
 
 
@@ -45,16 +38,6 @@ class TorchReID_Embedder(object):
         import sys
         sys.path.append(os.path.abspath("torchreid\\torchreid"))
         from torchreid.reid.utils import FeatureExtractor
-
-        if model_name is None:
-            model_name = 'osnet_ain_x1_0'
-
-        if model_wts_path is None:
-            model_wts_path = ''
-
-        # if model_name=='osnet_ain_x1_0' and model_wts_path=='':
-        #     model_wts_path = TORCHREID_OSNET_AIN_X1_0_MS_D_C_WTS
-
         self.gpu = gpu and torch.cuda.is_available()
         if self.gpu:
             device = 'cuda'
@@ -111,6 +94,6 @@ class TorchReID_Embedder(object):
         list of features (np.array with dim = 1280)
 
         """
-        # preproc_imgs = [self.preprocess(img) for img in np_images]
-        output =  self.model(np_images)
+        preproc_imgs = [self.preprocess(img) for img in np_images]
+        output =  self.model(preproc_imgs)
         return output.cpu().data.numpy()

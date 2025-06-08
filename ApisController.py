@@ -1,8 +1,8 @@
 import os
 import cv2
-import BodyPoseService as bps
+# import BodyPoseService as bps
 import DetectorService as ds
-import FacialService as fs
+# import FacialService as fs
 import TrackingService as ts
 # import ComparetiveService as cs
 import torch
@@ -29,7 +29,9 @@ def main(run_original = True):
 
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
-
+    time_update = 0
+    time_transform = 0
+    time_filter = 0
     imgs = loadDataset()
     loop_test = 1
     total_time = 0
@@ -45,14 +47,21 @@ def main(run_original = True):
             # result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
             #------------------------------------------------------------------------------------------------------
             data = detectionModel.transformResults(results, frame)
+            time_transform += (time.time()-start_track)
+            b = time.time()
             detectionsFilter = trackingModel.filterTrackingDetections(data)
+            time_filter += (time.time()-b)
+            c = time.time()
             if len(detectionsFilter) > 0:
                     trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
+            time_update+=(time.time()-c)
             total_time += (time.time() - start_track)
 
             # resultFacial = facialModel.extractionFacial(img = img)
             # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
-
+    print(f"Time transformation : {time_transform}")
+    print(f"Time filter : {time_filter}")
+    print(f"Time update : {time_update}")
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
     # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)

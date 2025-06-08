@@ -343,20 +343,36 @@ class TrackingService:
     store_boxes = torch.stack([store[2] for store in self.DETECTIONS_STORES])  # shape [N_store, 4]
     store_matched_flags = [False] * len(self.DETECTIONS_STORES)
     store_matched_detections = [False] * len(detections['detections_ts'])
+    # for index, detection in enumerate(detections['detections_ts']):
+    #   det_box = detection.unsqueeze(0)
+    #   #print(len(det_box))
+    #   ious = ops.box_iou(det_box, store_boxes)[0]
+    #   print("ious ",ious)
+    #   max_iou, max_idx = torch.max(ious, dim=0)
+    #   print("max_iou ",max_iou,'max_idx ',max_idx)
+    #   if max_iou >= self.MATCH_THRESHOLD:
+    #     self.DETECTIONS_STORES[max_idx][0] = detection
+    #     self.DETECTIONS_STORES[max_idx][1] = self.INIT_MAX_AGE
+    #     detections['tracking_id'][index] = store_boxes[0]
+    #     detections['is_matched'][index] = True
 
-    for index, detection in enumerate(detections['detections_ts']):
-      det_box = detection.unsqueeze(0)
-      ious = ops.box_iou(det_box, store_boxes)[0]
-      max_iou, max_idx = torch.max(ious, dim=0)
-      if max_iou >= self.MATCH_THRESHOLD:
-        self.DETECTIONS_STORES[max_idx][0] = detection
-        self.DETECTIONS_STORES[max_idx][1] = self.INIT_MAX_AGE
+    #     store_matched_flags[max_idx] = True
+    #     store_matched_detections[index] = True
+    
+    det_box = detections['detections_ts']
+    #print(len(det_box))
+    ious = ops.box_iou(det_box, store_boxes)
+    max_iou, max_idx = torch.max(ious,dim=1)
+    for index, max in enumerate(max_iou):
+      if max >= self.MATCH_THRESHOLD:
+        self.DETECTIONS_STORES[int(max_idx[index])][0] = detections['detections_ts'][index]
+        self.DETECTIONS_STORES[int(max_idx[index])][1] = self.INIT_MAX_AGE
         detections['tracking_id'][index] = store_boxes[0]
         detections['is_matched'][index] = True
 
-        store_matched_flags[max_idx] = True
+        store_matched_flags[int(max_idx[index])] = True
         store_matched_detections[index] = True
-
+   
     is_tracking = not all(store_matched_detections)
 
     for idx, matched in enumerate(store_matched_flags):

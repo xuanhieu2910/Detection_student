@@ -20,7 +20,7 @@ deep_sort:
   nn_budget: 100
   embedder: torchreid   # mobilenet or torchreid
   embedder_model_name : osnet_x0_25
-  embedder_wts : C:\Users\hieux\Desktop\Personal\Master\PROJECT\osnet_x0_25.pth
+  embedder_wts : D:\AnhThienLe\Intern_CV\Detection_student\osnet_x0_25.pth
 #---------------------------------------------------------------------------------------------------------------------------------------
 # Config Strong Sort
 strong_sort:
@@ -32,7 +32,7 @@ strong_sort:
   n_init: 3                   # Number of frames that a track remains in initialization phase
   nn_budget: 100              # Maximum size of the appearance descriptors gallery
   embedder_model_name: osnet_x0_25
-  embedder_wts: C:\Users\hieux\Desktop\Personal\Master\PROJECT\osnet_x0_25.pt
+  embedder_wts: D:\AnhThienLe\Intern_CV\Detection_student\osnet_x0_25.pt
 #---------------------------------------------------------------------------------------------------------------------------------------
 # Config Byte Track
 byte_track:
@@ -60,8 +60,8 @@ feat-fy:
 # Config feature extraction
 feature-extraction:
   model_name : osnet_x0_25
-  model_wts_path : C:\\Users\\hieux\\Desktop\\Personal\\Master\\PROJECT\\osnet_x0_25.pth
-  model_weight : C:\Users\hieux\Desktop\Personal\Master\PROJECT\osnet_x0_25.pt
+  model_wts_path : D:\\AnhThienLe\\Intern_CV\\Detection_student\\osnet_x0_25.pth
+  model_weight : D:\AnhThienLe\Intern_CV\Detection_student\osnet_x0_25.pt
 
 #########################################################################################################################################
 # Config comparative

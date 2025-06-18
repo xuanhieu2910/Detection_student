@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test2"
+    pathRootDataset = "dataset\\Test"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -18,46 +18,95 @@ def loadDataset():
     return imgs
 
 
+def handleOriginal(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
+    result_tracking = trackingModel.trackingDataObject(
+        trackingModel.transformationDataInputTracking(results, frame))
+    # resultFacial = facialModel.extractionFacial(img=img)
+    # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+
+
+def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
+    detectionsFilter = trackingModel.filterTrackingDetections(detectionModel.transformResults(results, frame))
+    if len(detectionsFilter) > 0:
+        trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter, frame))
+        print(trackingModel.DETECTIONS_STORES)
+    # resultFacial = facialModel.extractionFacial(img=img)
+    # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+
+def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, facialModel, bodyPoseMode, img):
+    frame = cv2.imread(img)
+    results = detectionModel.predict(img)
+    if isOriginal:
+        handleOriginal(detectionModel=detectionModel,
+                       trackingModel=trackingModel,
+                       facialModel=None,
+                       bodyPoseMode=None,
+                       results=results,
+                       frame=frame)
+        if len(trackingModel.DETECTIONS_STORES) > 0:
+            for detection in trackingModel.DETECTIONS_STORES:
+                print(f"Data detection: {detection[3]}")
+    else:
+        handleUpgrade(detectionModel=detectionModel,
+                      trackingModel=trackingModel,
+                      facialModel=None,
+                      bodyPoseMode=None,
+                      results=results,
+                      frame=frame)
+        if len(trackingModel.DETECTIONS_STORES) > 0:
+            for detection in trackingModel.DETECTIONS_STORES:
+                print(f"Data detection: {detection[3]}")
+
+def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, bodyPoseMode, img):
+    frame = cv2.imread(img)
+    dataTracking = trackingModel.DETECTIONS_STORES
+
 def main(run_original = True):
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
+    type_model_tracking = typeTracking[0]
 
-    type_model_tracking = typeTracking[2]
-    # initialize
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolo11s.pt"), type_model_tracking)
     run_original = run_original
     trackingModel = ts.TrackingService(type_model_tracking, run_original)
-
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
 
     imgs = loadDataset()
-    loop_test = 5
+    loop_test = 1
     total_time = 0
+    frame_count = 0
+    detection_interval = 3
+
     for i in range(loop_test):
         for img in imgs:
-            frame = cv2.imread(img)
-            results = detectionModel.predict(img)
-            start_track = time.time()
 
-            #-----------------------------------------------------------------------------------
-            # time_transform = time.time()
-            # data_transform = trackingModel.transformationDataInputTracking(results, frame)
-            # print(f"Time transformation : {time.time() - time_transform}")
-            result_tracking = trackingModel.trackingDataObject(trackingModel.transformationDataInputTracking(results, frame))
-            #------------------------------------------------------------------------------------------------------
-            # data = detectionModel.transformResults(results, frame)
-            # detectionsFilter = trackingModel.filterTrackingDetections(detectionModel.transformResults(results, frame))
-            # if len(detectionsFilter) > 0:
-            #         trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter,frame))
-            total_time += (time.time() - start_track)
-
-            # resultFacial = facialModel.extractionFacial(img = img)
-            # print(resultFacial)
-            # resultPoseBody = bodyPoseModel.extractionBodyPose(img = img)
+            if len(trackingModel.DETECTIONS_STORES) == 0:
+                print("Run is None")
+                handlePipelineNotSkipDetection(isOriginal=run_original,
+                               detectionModel=detectionModel,
+                               trackingModel=trackingModel,
+                               facialModel=None,
+                               bodyPoseMode=None,
+                               img=img)
+            else:
+                print("Run is not None")
+                if frame_count % detection_interval == 0:
+                    start_track = time.time()
+                    handlePipelineNotSkipDetection(isOriginal = run_original,
+                                   detectionModel = detectionModel,
+                                   trackingModel = trackingModel,
+                                   facialModel = None,
+                                   bodyPoseMode = None,
+                                   img = img)
+                    total_time += (time.time() - start_track)
+                else:
+                    handlePipelineSkipDetection(detectionModel = detectionModel,
+                                                trackingModel=trackingModel,
+                                                facialModel=None,
+                                                bodyPoseMode = None,
+                                                img=img)
+                frame_count += 1
 
     print("Total time average is {}".format(total_time/loop_test))
 if __name__ == "__main__":
-    # detectionsUnique = detectionModel.removeDuplicate(detectionsTransform)
-    main(run_original = True)
-    # Upgrade: Total time average is 0.13299732208251952
-    # Root: Total time average is 0.1190993309020996
+    main(run_original = False)

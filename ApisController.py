@@ -10,7 +10,7 @@ import time
 
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test"
+    pathRootDataset = "dataset\\Test2"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -29,7 +29,6 @@ def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, resu
     detectionsFilter = trackingModel.filterTrackingDetections(detectionModel.transformResults(results, frame))
     if len(detectionsFilter) > 0:
         trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter, frame))
-        print(trackingModel.DETECTIONS_STORES)
     # resultFacial = facialModel.extractionFacial(img=img)
     # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
 
@@ -43,9 +42,8 @@ def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, fa
                        bodyPoseMode=None,
                        results=results,
                        frame=frame)
-        if len(trackingModel.DETECTIONS_STORES) > 0:
-            for detection in trackingModel.DETECTIONS_STORES:
-                print(f"Data detection: {detection[3]}")
+        # resultFacial = facialModel.extractionFacial(img=img)
+        # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
     else:
         handleUpgrade(detectionModel=detectionModel,
                       trackingModel=trackingModel,
@@ -53,9 +51,8 @@ def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, fa
                       bodyPoseMode=None,
                       results=results,
                       frame=frame)
-        if len(trackingModel.DETECTIONS_STORES) > 0:
-            for detection in trackingModel.DETECTIONS_STORES:
-                print(f"Data detection: {detection[3]}")
+        # resultFacial = facialModel.extractionFacial(img=img)
+        # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
 
 def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, bodyPoseMode, img):
     frame = cv2.imread(img)
@@ -81,7 +78,6 @@ def main(run_original = True):
         for img in imgs:
 
             if len(trackingModel.DETECTIONS_STORES) == 0:
-                print("Run is None")
                 handlePipelineNotSkipDetection(isOriginal=run_original,
                                detectionModel=detectionModel,
                                trackingModel=trackingModel,
@@ -89,7 +85,6 @@ def main(run_original = True):
                                bodyPoseMode=None,
                                img=img)
             else:
-                print("Run is not None")
                 if frame_count % detection_interval == 0:
                     start_track = time.time()
                     handlePipelineNotSkipDetection(isOriginal = run_original,
@@ -99,6 +94,7 @@ def main(run_original = True):
                                    bodyPoseMode = None,
                                    img = img)
                     total_time += (time.time() - start_track)
+                    frame_count = 0
                 else:
                     handlePipelineSkipDetection(detectionModel = detectionModel,
                                                 trackingModel=trackingModel,

@@ -4,10 +4,15 @@ import BodyPoseService as bps
 import DetectorService as ds
 import FacialService as fs
 import TrackingService as ts
+import pandas as pd
+import keras
+import numpy as np
 # import ComparetiveService as cs
 import torch
 import time
 
+result_classification = [] 
+model_classification = keras.models.load_model("best_model_resnet.h5")
 
 def loadDataset():
     pathRootDataset = "dataset\\Test2"
@@ -17,12 +22,27 @@ def loadDataset():
         imgs.append(os.path.join(pathRootDataset, item))
     return imgs
 
+def classification(resultFacial,resultPoseBody):
+    if not resultPoseBody.empty:
+        features = pd.concat([resultPoseBody,resultFacial],axis = 1)
+        #classification
+        #print(features)
+        result = model_classification.predict(features)
+        time_classification += (time.time() - start_classification)
+        #if len(detectionsFilter) > 0:
+        count = (result >= 0.5).astype(int).flatten()
+        result_classification.append(count)
+        #counts = np.bincount(count, minlength=2)
+        #if i == 0:
+        #    total_negative += counts[0]
+        #    total_positive += counts[1]
 
 def handleOriginal(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
     result_tracking = trackingModel.trackingDataObject(
         trackingModel.transformationDataInputTracking(results, frame))
     # resultFacial = facialModel.extractionFacial(img=img)
     # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+    # classification(resultFacial,resultPoseBody)
 
 
 def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
@@ -31,6 +51,7 @@ def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, resu
         trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter, frame))
     # resultFacial = facialModel.extractionFacial(img=img)
     # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+    # classification(resultFacial,resultPoseBody)
 
 def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, facialModel, bodyPoseMode, img):
     frame = cv2.imread(img)
@@ -44,6 +65,7 @@ def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, fa
                        frame=frame)
         # resultFacial = facialModel.extractionFacial(img=img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+        # classification(resultFacial,resultPoseBody)
     else:
         handleUpgrade(detectionModel=detectionModel,
                       trackingModel=trackingModel,
@@ -53,6 +75,7 @@ def handlePipelineNotSkipDetection(isOriginal, detectionModel, trackingModel, fa
                       frame=frame)
         # resultFacial = facialModel.extractionFacial(img=img)
         # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+        # classification(resultFacial,resultPoseBody)
 
 def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, bodyPoseMode, img):
     frame = cv2.imread(img)

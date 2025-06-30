@@ -37,8 +37,7 @@ class FacialService:
   ------
   Frame Data related AUS and Head
   """
-  def extractionFacial(self, img):
-    frame = cv2.imread(img)
+  def extractionFacial(self, frame):
     landmarks = self.detectLandmarks(frame)
     dataAu = self.detectAus(frame = frame, landmarks = landmarks)
     dataAu.rename(columns = {0:"AU01",1:"AU02",2:"AU03",3:"AU03",4:"AU04",5:"AU05",6:"AU06",7:"AU07"

@@ -30,11 +30,16 @@ class BodyPoseService:
   ------
   Frame Data related Body pose
   """
-  def extractionBodyPose(self, img):
-    dataBody = self.handleOpenPosePytorch(tp = self.model, image = img)
-    if type(dataBody) == list:
-      dataBody = pd.DataFrame(dataBody)
-    return dataBody
+  def extractionBodyPose(self, frame, detection):
+    result_body = None
+    for detect in detection:
+      x1, y1, x2, y2 = detect
+      person = frame[int(y1):int(y2), int(x1):int(x2)]
+      dataBody = self.handleOpenPosePytorch(tp = self.model, frame = person)
+      if type(dataBody) == list:
+        dataBody = pd.DataFrame(dataBody)
+      result_body = pd.concat([result_body, dataBody], ignore_index=True)
+    return result_body
 
   def calculate_angle(self,x1, y1, x2, y2):
     dx = x1 - x2
@@ -42,14 +47,14 @@ class BodyPoseService:
     angle_ba = math.atan2(dy, dx)
     return angle_ba
 
-  def handleOpenPosePytorch(self,tp , image):
+  def handleOpenPosePytorch(self,tp , frame):
     print("Handle body pose processing...")
-    num_bf = 70
+    num_bf = 25
     start = time.time()
     flag_break = False
     iteration_ = 0
     iteration_ += 1
-    img = cv2.imread(image)
+    img = frame
     image_width = img.shape[1]
     image_height = img.shape[0]
     df = []
@@ -68,12 +73,12 @@ class BodyPoseService:
           input_features[0][iter_features] = normalized_y
           iter_features += 1
           # 45 feature distance between each point
-      for i in range(10):
-        for j in range(i + 1, 10):
-          distance = math.sqrt((input_features[0][2 * i] - input_features[0][2 * j]) ** 2 + (
-                  input_features[0][2 * i + 1] - input_features[0][2 * j + 1]) ** 2)
-          input_features[0][iter_features] = distance
-          iter_features = iter_features + 1
+      #for i in range(10):
+      #  for j in range(i + 1, 10):
+      #    distance = math.sqrt((input_features[0][2 * i] - input_features[0][2 * j]) ** 2 + (
+      #            input_features[0][2 * i + 1] - input_features[0][2 * j + 1]) ** 2)
+      #    input_features[0][iter_features] = distance
+      #    iter_features = iter_features + 1
       # calculate angle of 5 last feature
 
       # point 0 with point 1

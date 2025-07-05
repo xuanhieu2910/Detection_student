@@ -139,11 +139,12 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
         for img in imgs:
             start_track = time.time()
             frame = cv2.imread(img)
+
             results = detectionModel.predict(img)
 
-            detection = run_tracking_original(trackingModel=trackingModel, results=results, frame=frame)
+            tracking = run_tracking_original(trackingModel=trackingModel, results=results, frame=frame)
 
-            total_time_tracking += (time.time() - start_track)
+
             # if type_tracking == "DeepSort":
             #     list_detection = [detect[0] for detect in detection]
             # elif type_tracking == "StrongSort":

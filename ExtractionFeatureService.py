@@ -19,18 +19,14 @@ class ExtractionFeatureService:
             return self.loadModelExtractionFeatureModelStrongSort()
         if self.type_model == "ByteTracker":
             return self.loadModelExtractionFeatureModelByteTracker()
-        if self.type_model == "BotSort":
-            return self.loadModelExtractionFeatureModelBotSort()
 
     def extractFeatures(self, np_images):
-        # if self.type_model == "DeepSort":
-        #     return self.extractionFeatureDeepSort(np_images)
-        # if self.type_model == "StrongSort":
+        if self.type_model == "DeepSort":
+            return self.extractionFeatureDeepSort(np_images)
+        if self.type_model == "StrongSort":
             return self.extractionFeatureStrongSort(np_images)
-        # if self.type_model == "ByteTracker":
-        #     return self.extractionFeatureByteTracker(np_images)
-        # if self.type_model == "BotSort":
-        #     return self.extractionFeatureBotSort(np_images)
+        if self.type_model == "ByteTracker":
+            return self.extractionFeatureByteTracker(np_images)
 
     def loadModelExtractionFeatureModelDeepSort(self):
         loadConfig = config.yaml_load().get("feature-extraction")

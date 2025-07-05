@@ -29,7 +29,7 @@ def loadDataset():
         imgs.append(os.path.join(pathRootDataset, item))
     return imgs
 
-def classification(resultFacial, resultPoseBody, result_classification):
+def classification(resultFacial, resultPoseBody, result_classification, model_classification):
     if resultPoseBody is not None:
         features = pd.concat([resultPoseBody,resultFacial],axis = 1)
         #classification
@@ -48,45 +48,28 @@ def handleOriginal(detectionModel, trackingModel, facialModel, bodyPoseMode, res
     #classification(resultFacial,resultPoseBody)
 
 
-def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
+def handleUpgrade(detectionModel, trackingModel, results, frame):
     detection = detectionModel.transformResults(results, frame)
     detectionsFilter = trackingModel.filterTrackingDetections(detection)
     if len(detectionsFilter) > 0:
         trackingModel.updateFilterTracking(trackingModel.update_tracking(detectionsFilter, frame))
     return detection['detections']
-    #resultFacial = facialModel.extractionFacial(img=img)
-    #resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
-    #classification(resultFacial,resultPoseBody)
 
 
-def handlePipelineNotSkipDetection(isOriginal,
-                                   type_model_tracking,
-                                   detectionModel,
-                                   trackingModel,
-                                   facialModel,
-                                   bodyPoseMode,
-                                   img,
-                                   total_time_tracking,
-                                   total_time_classification,
-                                   result_classification):
+
+def handleNotSkipDetection(type_model_tracking,detectionModel,trackingModel,
+                            facialModel,bodyPoseMode,img,
+                            total_time_tracking,total_time_classification,result_classification):
     start_track = time.time()
     frame = cv2.imread(img)
     results = detectionModel.predict(img)
-    if isOriginal:
-        detection = handleOriginal(detectionModel=detectionModel,
-                       trackingModel=trackingModel,
-                       facialModel=facialModel,
-                       bodyPoseMode=bodyPoseMode,
-                       results=results,
-                       frame=frame)
-    else:
-        detection = handleUpgrade(detectionModel=detectionModel,
+    detection = handleUpgrade(detectionModel=detectionModel,
                       trackingModel=trackingModel,
-                      facialModel=facialModel,
-                      bodyPoseMode=bodyPoseMode,
                       results=results,
                       frame=frame)
+
     total_time_tracking += (time.time() - start_track)
+
     if type_model_tracking == "DeepSort":
         list_detection = [detect[0] for detect in detection]
     elif type_model_tracking == "StrongSort":
@@ -188,91 +171,87 @@ def run_tracking_original(trackingModel, results, frame):
 ------------------------------------------ CHẠY BẢN UPGRADE ----------------------------------------------------------
 """
 def run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classification_model):
+    run_original = run_original
+
+
+    #Loading các model
+    detectionModel = ds.DetectorService(os.path.join(os.getcwd(),version_yolo),
+                                        type_tracking)
     model_classification = keras.models.load_model(classification_model)
-    pass
-# run_original = run_original
-# #Selected tracking
-# typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
-# type_model_tracking = typeTracking[0]
-#
-# #Loading các model
-# detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolo11n.pt"), type_model_tracking)
-#
-# trackingModel = ts.TrackingService(type_model_tracking, run_original)
-# facialModel = fs.FacialService()
-# bodyPoseModel = bps.BodyPoseService()
-#
-#
-# #Loading dataset
-# imgs = loadDataset()
-#
-#
-# loop_executed = 1
-# frame_count = 0
-# detection_interval = 1
-# total_time_tracking = 0
-# total_time_classification = 0
-# result_classification = []
-#
-#
-# for i in range(loop_executed):
-#     for img in imgs:
-#         if len(trackingModel.DETECTIONS_STORES) == 0:
-#             (total_time_tracking,
-#              total_time_classification) = handlePipelineNotSkipDetection(isOriginal=run_original,
-#                            detectionModel=detectionModel,
-#                            type_model_tracking = 2,
-#                            trackingModel=trackingModel,
-#                            facialModel=facialModel,
-#                            bodyPoseMode=bodyPoseModel,
-#                            img=img,
-#                            total_time_tracking = total_time_tracking,
-#                            total_time_classification = total_time_classification,
-#                            result_classification = result_classification)
-#
-#         else:
-#             if (frame_count % detection_interval) == 0:
-#                 (total_time_tracking,
-#                  total_time_classification) = handlePipelineNotSkipDetection(isOriginal = run_original,
-#                                detectionModel = detectionModel,
-#                                type_model_tracking =2,
-#                                trackingModel = trackingModel,
-#                                facialModel = facialModel,
-#                                bodyPoseMode = bodyPoseModel,
-#                                img = img,
-#                                total_time_tracking = total_time_tracking,
-#                                total_time_classification = total_time_classification,
-#                                result_classification = result_classification)
-#                 frame_count = 0
-#             else:
-#                 (total_time_tracking,
-#                  total_time_classification) = handlePipelineSkipDetection(detectionModel = detectionModel,
-#                                             trackingModel=trackingModel,
-#                                             facialModel=facialModel,
-#                                             bodyPoseMode = bodyPoseModel,
-#                                             img=img,
-#                                             total_time_tracking = total_time_tracking,
-#                                             total_time_classification = total_time_classification,
-#                                             result_classification = result_classification)
-#             frame_count += 1
-#     if i == 0:
-#         with open('output.csv', 'w', newline='') as file:
-#             writer = csv.writer(file)
-#             for value in result_classification:
-#                 writer.writerow([value])
-#             result_classification = []
-#
-# print("Average classification time is {}".format(total_time_classification/loop_executed/len(imgs)))
-# print("Total time tracking is {}".format(total_time_tracking/loop_executed/len(imgs)))
+    trackingModel = ts.TrackingService(type_tracking, run_original)
+    facialModel = fs.FacialService()
+    bodyPoseModel = bps.BodyPoseService()
+
+
+    #Loading dataset
+    imgs = loadDataset()
+
+
+    loop_executed = 1
+    frame_count = 0
+    detection_interval = 1
+    total_time_tracking = 0
+    total_time_classification = 0
+    result_classification = []
+
+
+    for i in range(loop_executed):
+        for img in imgs:
+            if len(trackingModel.DETECTIONS_STORES) == 0:
+                (total_time_tracking,
+                 total_time_classification) = handleNotSkipDetection(detectionModel=detectionModel,
+                               type_model_tracking = type_tracking,
+                               trackingModel=trackingModel,
+                               facialModel=facialModel,
+                               bodyPoseMode=bodyPoseModel,
+                               img=img,
+                               total_time_tracking = total_time_tracking,
+                               total_time_classification = total_time_classification,
+                               result_classification = result_classification)
+
+            else:
+                if (frame_count % detection_interval) == 0:
+                    (total_time_tracking,
+                     total_time_classification) = handleNotSkipDetection(
+                                   detectionModel = detectionModel,
+                                   type_model_tracking = type_tracking,
+                                   trackingModel = trackingModel,
+                                   facialModel = facialModel,
+                                   bodyPoseMode = bodyPoseModel,
+                                   img = img,
+                                   total_time_tracking = total_time_tracking,
+                                   total_time_classification = total_time_classification,
+                                   result_classification = result_classification)
+                    frame_count = 0
+                else:
+                    (total_time_tracking,
+                     total_time_classification) = handlePipelineSkipDetection(detectionModel = detectionModel,
+                                                trackingModel=trackingModel,
+                                                facialModel=facialModel,
+                                                bodyPoseMode = bodyPoseModel,
+                                                img=img,
+                                                total_time_tracking = total_time_tracking,
+                                                total_time_classification = total_time_classification,
+                                                result_classification = result_classification)
+                frame_count += 1
+        if i == 0:
+            with open('output.csv', 'w', newline='') as file:
+                writer = csv.writer(file)
+                for value in result_classification:
+                    writer.writerow([value])
+                result_classification = []
+
+    print("Average classification time is {}".format(total_time_classification/loop_executed/len(imgs)))
+    print("Total time tracking is {}".format(total_time_tracking/loop_executed/len(imgs)))
 
 def main(run_original = True,
          version_yolo = "yolov5nu.pt",
          type_tracking = "DeepSort",
-         classification_model = "DNN"):
+         classification_model = "best_model_dnn.h5"):
     if run_original:
         run_end_to_end_original(run_original, version_yolo, type_tracking, classification_model)
     else:
-        run_end_to_end_upgrade()
+        run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classification_model)
 
 
 
@@ -284,7 +263,7 @@ if __name__ == "__main__":
     
     Selected classification model: "best_model_dnn.h5" | "best_model_resnet.h5"
     """
-    main(run_original = True,
+    main(run_original = False,
          version_yolo = "yolov5nu.pt",
          type_tracking = "DeepSort",
-         classification_model = "DNN")
+         classification_model = "best_model_dnn.h5")

@@ -28,7 +28,6 @@ def classification(resultFacial,resultPoseBody):
         #classification
         #print(features)
         result = model_classification.predict(features)
-        time_classification += (time.time() - start_classification)
         #if len(detectionsFilter) > 0:
         count = (result >= 0.5).astype(int).flatten()
         result_classification.append(count)

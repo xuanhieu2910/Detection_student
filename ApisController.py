@@ -59,7 +59,17 @@ def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, resu
     #resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
     #classification(resultFacial,resultPoseBody)
 
-def handlePipelineNotSkipDetection(isOriginal, type_model_tracking, detectionModel, trackingModel, facialModel, bodyPoseMode, img, total_time_tracking, total_time_classification, result_classification):
+
+def handlePipelineNotSkipDetection(isOriginal,
+                                   type_model_tracking,
+                                   detectionModel,
+                                   trackingModel,
+                                   facialModel,
+                                   bodyPoseMode,
+                                   img,
+                                   total_time_tracking,
+                                   total_time_classification,
+                                   result_classification):
     start_track = time.time()
     frame = cv2.imread(img)
     results = detectionModel.predict(img)
@@ -94,7 +104,18 @@ def handlePipelineNotSkipDetection(isOriginal, type_model_tracking, detectionMod
     #classification(resultFacial,resultPoseBody,result_classification)
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
-def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, bodyPoseMode, img, total_time_tracking, total_time_classification, result_classification):
+
+
+
+
+def handlePipelineSkipDetection(detectionModel,
+                                trackingModel,
+                                facialModel,
+                                bodyPoseMode,
+                                img,
+                                total_time_tracking,
+                                total_time_classification,
+                                result_classification):
     start_track = time.time()
     frame = cv2.imread(img)
     dataTracking = trackingModel.DETECTIONS_STORES
@@ -110,7 +131,7 @@ def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, body
 
 def main(run_original = True):
     typeTracking = ["DeepSort", "StrongSort", "ByteTracker"]
-    type_model_tracking = typeTracking[2]
+    type_model_tracking = typeTracking[0]
 
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolo11n.pt"), type_model_tracking)
     run_original = run_original
@@ -172,5 +193,8 @@ def main(run_original = True):
 
     print("Average classification time is {}".format(total_time_classification/loop_test/len(imgs)))
     print("Total time tracking is {}".format(total_time_tracking/loop_test/len(imgs)))
+
+
+
 if __name__ == "__main__":
     main(run_original = True)

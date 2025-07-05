@@ -29,7 +29,7 @@ def loadDataset():
         imgs.append(os.path.join(pathRootDataset, item))
     return imgs
 
-def classification(resultFacial, resultPoseBody, result_classification, model_classification):
+def handle_classification(resultFacial, resultPoseBody, result_classification, model_classification):
     if resultPoseBody is not None:
         features = pd.concat([resultPoseBody,resultFacial],axis = 1)
         #classification
@@ -37,15 +37,6 @@ def classification(resultFacial, resultPoseBody, result_classification, model_cl
         result = model_classification.predict(features)
         count = (result >= 0.5).astype(int).flatten()
         result_classification.append(count[0])
-
-def handleOriginal(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
-    result_tracking = trackingModel.trackingDataObject(
-        trackingModel.transformationDataInputTracking(results, frame))
-    detection = trackingModel.transformationDataInputTracking(results, frame)['detections']
-    return detection
-    #resultFacial = facialModel.extractionFacial(img=img)
-    #resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
-    #classification(resultFacial,resultPoseBody)
 
 
 def handleUpgrade(detectionModel, trackingModel, results, frame):
@@ -80,10 +71,10 @@ def handleNotSkipDetection(type_model_tracking,detectionModel,trackingModel,
     elif type_model_tracking == "ByteTracker":
         list_detection = detection.xyxy.tolist()
 
-    #resultFacial = facialModel.extractionFacial(frame)
+    #resultFacial = facialModel. (frame)
     #resultPoseBody = bodyPoseMode.extractionBodyPose(frame, list_detection)
     start_classification = time.time()
-    #classification(resultFacial,resultPoseBody,result_classification)
+    #handle_classification(resultFacial,resultPoseBody,result_classification)
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
 
@@ -105,7 +96,7 @@ def handlePipelineSkipDetection(detectionModel,
     #resultFacial = facialModel.extractionFacial(frame)
     #resultPoseBody = bodyPoseMode.extractionBodyPose(frame, detection)
     start_classification = time.time()
-    #classification(resultFacial,resultPoseBody,result_classification)
+    #handle_classification(resultFacial,resultPoseBody,result_classification)
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
 
@@ -120,12 +111,9 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
                                         type_model_tracking = type_tracking)
     trackingModel = ts.TrackingService(typeModelTracking = type_tracking,
                                        run_original = run_original)
-
     model_classification = keras.models.load_model(classification_model)
-
-    #
-    # facialModel = fs.FacialService()
-    # bodyPoseModel = bps.BodyPoseService()
+    facialModel = fs.FacialService()
+    bodyPoseModel = bps.BodyPoseService()
 
     # Loading dataset
     imgs = loadDataset()
@@ -139,11 +127,14 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
         for img in imgs:
             start_track = time.time()
             frame = cv2.imread(img)
-
+            # start_detection_time = time.time()
             results = detectionModel.predict(img)
+            # end_detection_time = time.time()
 
+
+            # start_tracking_time = time.time()
             tracking = run_tracking_original(trackingModel=trackingModel, results=results, frame=frame)
-
+            # end_tracking_time = time.time()
 
             # if type_tracking == "DeepSort":
             #     list_detection = [detect[0] for detect in detection]
@@ -155,10 +146,13 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
             # elif type_tracking == "ByteTracker":
             #     list_detection = detection.xyxy.tolist()
 
-            # resultFacial = facialModel.extractionFacial(frame)
-            # resultPoseBody = bodyPoseMode.extractionBodyPose(frame, list_detection)
+            resultFacial = facialModel.extractionFacial(frame)
+            print(resultFacial)
+            # resultPoseBody = bodyPoseModel.extractionBodyPose(frame, list_detection)
+            # print(resultPoseBody)
+
             # start_classification = time.time()
-            # # classification(resultFacial,resultPoseBody,result_classification)
+            # # handle_classification(resultFacial,resultPoseBody,result_classification)
             # total_time_classification += (time.time() - start_classification)
         # print("Average classification time is {}".format(total_time_classification/loop_executed/len(imgs)))
         print("Total time tracking is {}".format(total_time_tracking/loop_executed/len(imgs)))
@@ -264,7 +258,7 @@ if __name__ == "__main__":
     
     Selected classification model: "best_model_dnn.h5" | "best_model_resnet.h5"
     """
-    main(run_original = False,
+    main(run_original = True,
          version_yolo = "yolov5nu.pt",
          type_tracking = "DeepSort",
          classification_model = "best_model_dnn.h5")

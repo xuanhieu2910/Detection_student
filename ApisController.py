@@ -128,16 +128,6 @@ def handlePipelineSkipDetection(detectionModel,
     return total_time_tracking, total_time_classification
 
 
-def main(run_original = True,
-         version_yolo = "yolov5nu.pt",
-         type_tracking = "DeepSort",
-         classification_model = "DNN"):
-    if run_original:
-        run_end_to_end_original(run_original, version_yolo, type_tracking, classification_model)
-    else:
-        run_end_to_end_upgrade()
-
-
 """
 ---------------------------------------------------- CHẠY PHIÊN BẢN GỐC ------------------------------------------------
 """
@@ -271,6 +261,17 @@ def run_end_to_end_upgrade():
 #
 # print("Average classification time is {}".format(total_time_classification/loop_executed/len(imgs)))
 # print("Total time tracking is {}".format(total_time_tracking/loop_executed/len(imgs)))
+
+def main(run_original = True,
+         version_yolo = "yolov5nu.pt",
+         type_tracking = "DeepSort",
+         classification_model = "DNN"):
+    if run_original:
+        run_end_to_end_original(run_original, version_yolo, type_tracking, classification_model)
+    else:
+        run_end_to_end_upgrade()
+
+
 
 if __name__ == "__main__":
     """    

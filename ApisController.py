@@ -12,7 +12,6 @@ import csv
 import torch
 import time
 
-model_classification = keras.models.load_model("best_model_resnet.h5")
 
 def tlwh_to_xyxy(tlwh):
     x, y, w, h = tlwh
@@ -138,6 +137,9 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
                                         type_model_tracking = type_tracking)
     trackingModel = ts.TrackingService(typeModelTracking = type_tracking,
                                        run_original = run_original)
+
+    model_classification = keras.models.load_model(classification_model)
+
     #
     # facialModel = fs.FacialService()
     # bodyPoseModel = bps.BodyPoseService()
@@ -185,7 +187,8 @@ def run_tracking_original(trackingModel, results, frame):
 """
 ------------------------------------------ CHẠY BẢN UPGRADE ----------------------------------------------------------
 """
-def run_end_to_end_upgrade():
+def run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classification_model):
+    model_classification = keras.models.load_model(classification_model)
     pass
 # run_original = run_original
 # #Selected tracking
@@ -279,7 +282,7 @@ if __name__ == "__main__":
     
     Selected version yolo:  yolov5nu.pt | yolov7n.pt | yolov8n.pt | yolo11n.pt 
     
-    Selected classification model: "DNN" | "Resnet"
+    Selected classification model: "best_model_dnn.h5" | "best_model_resnet.h5"
     """
     main(run_original = True,
          version_yolo = "yolov5nu.pt",

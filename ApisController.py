@@ -1,16 +1,16 @@
 import os
+# import ComparetiveService as cs
+import time
+
 import cv2
+import keras
+import numpy as np
+import pandas as pd
+
 import BodyPoseService as bps
 import DetectorService as ds
 import FacialService as fs
 import TrackingService as ts
-import pandas as pd
-import keras
-import numpy as np
-import csv
-# import ComparetiveService as cs
-import torch
-import time
 
 
 def tlwh_to_xyxy(tlwh):

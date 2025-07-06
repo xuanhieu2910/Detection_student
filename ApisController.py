@@ -108,17 +108,6 @@ def handlePipelineSkipDetection(detectionModel,
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
 
-def transform_result_tracking_original(type_tracking, result_tracking):
-    list_detection = []
-    if type_tracking == "DeepSort":
-        list_detection = [np.append(detect.to_tlwh(),detect.track_id) for detect in result_tracking]
-    elif type_tracking == "StrongSort":
-        if len(result_tracking) > 0:
-            list_detection = [np.append(tlwh_to_xyxy(detect.to_tlwh()),detect.track_id) for detect in result_tracking]
-    elif type_tracking == "ByteTracker":
-        for detect in result_tracking:
-            list_detection.append(detect[:5])
-    return list_detection
 
 
 
@@ -213,6 +202,17 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
         print("Total time facial is {}".format(total_time_facial/loop_executed/len(imgs)))
 
 
+def transform_result_tracking_original(type_tracking, result_tracking):
+    list_detection = []
+    if type_tracking == "DeepSort":
+        list_detection = [np.append(detect.to_tlwh(),detect.track_id) for detect in result_tracking]
+    elif type_tracking == "StrongSort":
+        if len(result_tracking) > 0:
+            list_detection = [np.append(tlwh_to_xyxy(detect.to_tlwh()),detect.track_id) for detect in result_tracking]
+    elif type_tracking == "ByteTracker":
+        for detect in result_tracking:
+            list_detection.append(detect[:5])
+    return list_detection
 
 def run_tracking_original(trackingModel, results, frame):
     return trackingModel.trackingDataObject(

@@ -408,17 +408,7 @@ class TrackingService:
         trackings.append([track.track_id, track.features[0], track.to_tlwh()])
     return trackings
 
-  # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
-  # Bounding box | conf | tracking-id | is_matched
-  # coords.tolist() + [self.track_id, self.score, self.cls, self.idx]
-  # return {
-  #   "detections": detections,
-  #   "detections_ts": detections[0].boxes.xyxy,
-  #   "confidence": detections[0].conf,
-  #   "is_matched": [False] * len(detections),
-  #   "tracking_id": [0] * len(detections),
-  #   "frame": frame
-  # }
+
   def transformResultsTrackingByteTrack(self, resultsTracking, detections):
     trackings = []
     detection_map = {}

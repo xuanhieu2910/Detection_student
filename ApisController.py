@@ -116,7 +116,8 @@ def transform_result_tracking_original(type_tracking, result_tracking):
         if len(result_tracking) > 0:
             list_detection = [np.append(tlwh_to_xyxy(detect.to_tlwh()),detect.track_id) for detect in result_tracking]
     elif type_tracking == "ByteTracker":
-        list_detection = result_tracking.xyxy.tolist()
+        for detect in result_tracking:
+            list_detection.append(detect[:5])
     return list_detection
 
 
@@ -161,7 +162,7 @@ def handle_facial_body_process_original(frame, result_detection_tracking, facial
                 result_facial_bodypose_list.append(combined)
         elif type_tracking == "ByteTracker":
             for detect in result_detection_tracking:
-                x1, y1, x2, y2, id = map(float, detect[:5])
+                x1, y1, x2, y2, id = detect[:5]
                 person = frame[int(y1):int(y2), int(x1):int(x2)]
                 resultFacial = facialModel.extractionFacial(person)
                 resultPoseBody = bodyPoseModel.extractionBodyPose(person)
@@ -315,5 +316,5 @@ if __name__ == "__main__":
     """
     main(run_original = True,
          version_yolo = "yolov5nu.pt",
-         type_tracking = "StrongSort",
+         type_tracking = "ByteTracker",
          classification_model = "best_model_dnn.h5")

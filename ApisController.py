@@ -21,8 +21,16 @@ def tlwh_to_xyxy(tlwh):
     y_max = y + h
     return [x_min, y_min, x_max, y_max]
 
+def ltwh_to_xyxy(ltwh):
+    x, y, w, h = ltwh
+    x_min = x
+    y_min = y
+    x_max = x + w
+    y_max = y + h
+    return [x_min, y_min, x_max, y_max]
+
 def loadDataset():
-    pathRootDataset = "dataset\\CBBDS"
+    pathRootDataset = "dataset\\Test"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -73,9 +81,9 @@ def handleNotSkipDetection(type_model_tracking,detectionModel,trackingModel,
 
     #resultFacial = facialModel. (frame)
     #resultPoseBody = bodyPoseMode.extractionBodyPose(frame, list_detection)
-    start_classification = time.time()
-    #handle_classification(resultFacial,resultPoseBody,result_classification)
-    total_time_classification += (time.time() - start_classification)
+    # start_classification = time.time()
+    # handle_classification(resultFacial,resultPoseBody,result_classification)
+    # total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
 
 
@@ -100,10 +108,56 @@ def handlePipelineSkipDetection(detectionModel,
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
 
+def transform_result_tracking_original(type_tracking, result_tracking):
+    list_detection = []
+    if type_tracking == "DeepSort":
+        list_detection = [np.append(detect.to_tlwh(),detect.track_id) for detect in result_tracking]
+    # elif type_tracking == "StrongSort":
+    #     all_detection = result_tracking.tolist()
+    #     list_detection = []
+    #     for sublist in all_detection:
+    #         list_detection.append(sublist[:4])
+    # elif type_tracking == "ByteTracker":
+    #     list_detection = result_tracking.xyxy.tolist()
+    return list_detection
+
+
 
 """
 ---------------------------------------------------- CHẠY PHIÊN BẢN GỐC ------------------------------------------------
 """
+def handle_detection_tracking_process_original(img, frame, detectionModel, trackingModel, type_tracking):
+    start_detection_time = time.time()
+    results = detectionModel.predict(img)
+    time_detection = (time.time() - start_detection_time)
+
+    start_tracking_time = time.time()
+    tracking = run_tracking_original(trackingModel=trackingModel, results=results, frame=frame)
+    time_tracking = (time.time() - start_tracking_time)
+    list_detection = transform_result_tracking_original(type_tracking=type_tracking,
+                                                        result_tracking=tracking)
+
+    return time_detection, time_tracking, list_detection
+
+
+def handle_facial_body_process_original(frame, result_detection_tracking, facialModel, bodyPoseModel,type_tracking):
+    result_facial_bodypose_list = []
+    for detect in result_detection_tracking:
+        if type_tracking == "DeepSort":
+            x1, y1, x2, y2, id = map(float, detect[:5])
+            person = frame[int(y1):int(y2), int(x1):int(x2)]
+            resultFacial = facialModel.extractionFacial(person)
+            resultPoseBody = bodyPoseModel.extractionBodyPose(person)
+            combined = pd.concat([resultPoseBody, resultFacial], axis=1)
+            combined["ID"] = int(id)
+            result_facial_bodypose_list.append(combined)
+        elif type_tracking == "StrongSort":
+            pass
+        elif type_tracking == "ByteTracker":
+            pass
+    return pd.concat(result_facial_bodypose_list, ignore_index=True)
+
+
 def run_end_to_end_original(run_original, version_yolo, type_tracking, classification_model):
 
     # Loading các model
@@ -119,43 +173,32 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
     imgs = loadDataset()
 
     loop_executed = 1
+
+    total_time_detection = 0
     total_time_tracking = 0
+    total_time_facial = 0
+
     total_time_classification = 0
+
+
     result_classification = []
 
     for i in range(loop_executed):
         for img in imgs:
             start_track = time.time()
             frame = cv2.imread(img)
-            # start_detection_time = time.time()
-            results = detectionModel.predict(img)
-            # end_detection_time = time.time()
+            result_detection_tracking = handle_detection_tracking_process_original(img,frame, detectionModel, trackingModel,type_tracking)
+            result_facial_bodypose = handle_facial_body_process_original(frame, result_detection_tracking[2], facialModel, bodyPoseModel, type_tracking)
 
-
-            # start_tracking_time = time.time()
-            tracking = run_tracking_original(trackingModel=trackingModel, results=results, frame=frame)
-            # end_tracking_time = time.time()
-
-            # if type_tracking == "DeepSort":
-            #     list_detection = [detect[0] for detect in detection]
-            # elif type_tracking == "StrongSort":
-            #     all_detection = detection.tolist()
-            #     list_detection = []
-            #     for sublist in all_detection:
-            #         list_detection.append(sublist[:4])
-            # elif type_tracking == "ByteTracker":
-            #     list_detection = detection.xyxy.tolist()
-
-            resultFacial = facialModel.extractionFacial(frame)
-            print(resultFacial)
-            # resultPoseBody = bodyPoseModel.extractionBodyPose(frame, list_detection)
-            # print(resultPoseBody)
-
+            print(result_facial_bodypose)
             # start_classification = time.time()
-            # # handle_classification(resultFacial,resultPoseBody,result_classification)
+            # handle_classification(resultFacial,resultPoseBody,result_classification)
             # total_time_classification += (time.time() - start_classification)
         # print("Average classification time is {}".format(total_time_classification/loop_executed/len(imgs)))
+        print("Total time detection is {}".format(total_time_detection / loop_executed / len(imgs)))
         print("Total time tracking is {}".format(total_time_tracking/loop_executed/len(imgs)))
+        print("Total time facial is {}".format(total_time_facial/loop_executed/len(imgs)))
+
 
 
 def run_tracking_original(trackingModel, results, frame):

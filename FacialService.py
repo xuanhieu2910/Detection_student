@@ -37,18 +37,16 @@ class FacialService:
   ------
   Frame Data related AUS and Head
   """
-  def extractionFacial(self, frame):
-    landmarks = self.detectLandmarks(frame)
-    dataAu = self.detectAus(frame = frame, landmarks = landmarks)
-    dataAu.rename(columns = {0:"AU01",1:"AU02",2:"AU03",3:"AU03",4:"AU04",5:"AU05",6:"AU06",7:"AU07"
-      ,8:"AU08",9:"AU09",10:"AU10",11:"AU11",12:"AU12",13:"AU13",14:"AU14",15:"AU15",16:"AU16",17:"AU17",18:"AU18",19:"AU19"}, inplace = True)
+  def extractionFacial(self, person):
+    landmarks = self.detectLandmarks(person)
+    dataAu = self.detectAus(frame = person, landmarks = landmarks)
+    dataAu.rename(columns = {0:"AU01",1:"AU02",2:"AU03",3:"AU04",4:"AU05",5:"AU06",6:"AU07",7:"AU08"
+      ,8:"AU09",9:"AU10",10:"AU11",11:"AU12",12:"AU13",13:"AU14",14:"AU15",15:"AU16",16:"AU17",17:"AU18",18:"AU19",19:"AU20"}, inplace = True)
 
-    dataPose = self.detectFacePose(frame, landmarks)
+    dataPose = self.detectFacePose(person, landmarks)
     dataPose.rename(columns = {0:"Pitch", 1:"Roll", 2:"Yaw"}, inplace = True)
 
     dataFacial = pd.concat([dataAu,dataPose], axis = 1)
-    # dataFacial['cls'] = handleLabel.handleAssignNameClass(cls = os.path.basename(img).split(".")[0].split("_")[2])
-    # dataFacial['file_name'] = os.path.basename(img)
     if type(dataFacial) == list:
       dataFacial = pd.DataFrame(dataFacial)
     return dataFacial

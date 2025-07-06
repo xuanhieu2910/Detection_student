@@ -112,13 +112,11 @@ def transform_result_tracking_original(type_tracking, result_tracking):
     list_detection = []
     if type_tracking == "DeepSort":
         list_detection = [np.append(detect.to_tlwh(),detect.track_id) for detect in result_tracking]
-    # elif type_tracking == "StrongSort":
-    #     all_detection = result_tracking.tolist()
-    #     list_detection = []
-    #     for sublist in all_detection:
-    #         list_detection.append(sublist[:4])
-    # elif type_tracking == "ByteTracker":
-    #     list_detection = result_tracking.xyxy.tolist()
+    elif type_tracking == "StrongSort":
+        if len(result_tracking) > 0:
+            list_detection = [np.append(tlwh_to_xyxy(detect.to_tlwh()),detect.track_id) for detect in result_tracking]
+    elif type_tracking == "ByteTracker":
+        list_detection = result_tracking.xyxy.tolist()
     return list_detection
 
 
@@ -141,22 +139,37 @@ def handle_detection_tracking_process_original(img, frame, detectionModel, track
 
 
 def handle_facial_body_process_original(frame, result_detection_tracking, facialModel, bodyPoseModel,type_tracking):
-    result_facial_bodypose_list = []
-    for detect in result_detection_tracking:
+    if len(result_detection_tracking) > 0:
+        result_facial_bodypose_list = []
         if type_tracking == "DeepSort":
-            x1, y1, x2, y2, id = map(float, detect[:5])
-            person = frame[int(y1):int(y2), int(x1):int(x2)]
-            resultFacial = facialModel.extractionFacial(person)
-            resultPoseBody = bodyPoseModel.extractionBodyPose(person)
-            combined = pd.concat([resultPoseBody, resultFacial], axis=1)
-            combined["ID"] = int(id)
-            result_facial_bodypose_list.append(combined)
+            for detect in result_detection_tracking:
+                x1, y1, x2, y2, id = map(float, detect[:5])
+                person = frame[int(y1):int(y2), int(x1):int(x2)]
+                resultFacial = facialModel.extractionFacial(person)
+                resultPoseBody = bodyPoseModel.extractionBodyPose(person)
+                combined = pd.concat([resultPoseBody, resultFacial], axis=1)
+                combined["ID"] = int(id)
+                result_facial_bodypose_list.append(combined)
         elif type_tracking == "StrongSort":
-            pass
+            for detect in result_detection_tracking:
+                x1, y1, x2, y2, id = detect[:5]
+                person = frame[int(y1):int(y2), int(x1):int(x2)]
+                resultFacial = facialModel.extractionFacial(person)
+                resultPoseBody = bodyPoseModel.extractionBodyPose(person)
+                combined = pd.concat([resultPoseBody, resultFacial], axis=1)
+                combined["ID"] = int(id)
+                result_facial_bodypose_list.append(combined)
         elif type_tracking == "ByteTracker":
-            pass
-    return pd.concat(result_facial_bodypose_list, ignore_index=True)
-
+            for detect in result_detection_tracking:
+                x1, y1, x2, y2, id = map(float, detect[:5])
+                person = frame[int(y1):int(y2), int(x1):int(x2)]
+                resultFacial = facialModel.extractionFacial(person)
+                resultPoseBody = bodyPoseModel.extractionBodyPose(person)
+                combined = pd.concat([resultPoseBody, resultFacial], axis=1)
+                combined["ID"] = int(id)
+                result_facial_bodypose_list.append(combined)
+        return pd.concat(result_facial_bodypose_list, ignore_index=True)
+    return []
 
 def run_end_to_end_original(run_original, version_yolo, type_tracking, classification_model):
 
@@ -189,7 +202,6 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
             frame = cv2.imread(img)
             result_detection_tracking = handle_detection_tracking_process_original(img,frame, detectionModel, trackingModel,type_tracking)
             result_facial_bodypose = handle_facial_body_process_original(frame, result_detection_tracking[2], facialModel, bodyPoseModel, type_tracking)
-
             print(result_facial_bodypose)
             # start_classification = time.time()
             # handle_classification(resultFacial,resultPoseBody,result_classification)
@@ -303,5 +315,5 @@ if __name__ == "__main__":
     """
     main(run_original = True,
          version_yolo = "yolov5nu.pt",
-         type_tracking = "DeepSort",
+         type_tracking = "StrongSort",
          classification_model = "best_model_dnn.h5")

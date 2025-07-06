@@ -347,9 +347,9 @@ class TrackingService:
     max_iou, max_idx = torch.max(ious, dim=1)
     for index, max in enumerate(max_iou):
       if max >= self.MATCH_THRESHOLD:
-        self.DETECTIONS_STORES[int(max_idx[index])][0] = detections['detections_ts'][index]
+        self.DETECTIONS_STORES[int(max_idx[index])][2] = detections['detections_ts'][index]
         self.DETECTIONS_STORES[int(max_idx[index])][1] = self.INIT_MAX_AGE
-        detections['tracking_id'][index] = store_boxes[0]
+        detections['tracking_id'][index] = self.DETECTIONS_STORES[index][0]
         detections['is_matched'][index] = True
 
         store_matched_flags[int(max_idx[index])] = True
@@ -364,7 +364,7 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-
+    print(f"Detection store :{self.DETECTIONS_STORES}")
     return detections if is_tracking else []
 
 

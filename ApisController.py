@@ -219,6 +219,7 @@ def run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classifica
                                                    results=results, frame=frame)
             else:
                 if frame_count != 0 and (frame_count % detection_interval == 0):
+                        print("Run lại nè!!!!")
                         results = detectionModel.predict(img)
                         detection_tracking_process_upgrade(detectionModel=detectionModel, trackingModel=trackingModel,
                                                            results=results, frame=frame)
@@ -226,8 +227,8 @@ def run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classifica
                         continue
                 frame_count += 1
 
-
             if len(trackingModel.DETECTIONS_STORES) > 0:
+                print(f"Detection : {trackingModel.DETECTIONS_STORES}")
                 data_facial_body_pose = handle_facial_body_process_upgrade(frame, trackingModel.DETECTIONS_STORES,
                                                                            facialModel, bodyPoseModel,type_tracking)
                 #Xử lý tiếp classification

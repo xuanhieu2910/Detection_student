@@ -297,9 +297,12 @@ class TrackingService:
     un_mask = torch.ones(detections['embeds'].size(0), dtype=torch.bool)
 
     for index, embed in enumerate(detections['embeds']):
-      embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
+      embed_tensor = torch.tensor(embed.detach().numpy()).unsqueeze(0)
       for idx, store in enumerate(self.DETECTIONS_STORES):
-        store_tensor = torch.tensor(np.array(store[2]), dtype=torch.float32).unsqueeze(0)
+        if isinstance(store[2], np.ndarray):
+          store_tensor = torch.tensor(np.array(store[2]), dtype=torch.float32).unsqueeze(0)
+        else:
+          store_tensor = torch.tensor(store[2].detach().numpy(), dtype=torch.float32).unsqueeze(0)
         if self.comparativeService.is_matched(embed_tensor,store_tensor):
           self.DETECTIONS_STORES[idx][2] = embed
           self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
@@ -349,8 +352,9 @@ class TrackingService:
       if max >= self.MATCH_THRESHOLD:
         self.DETECTIONS_STORES[int(max_idx[index])][2] = detections['detections_ts'][index]
         self.DETECTIONS_STORES[int(max_idx[index])][1] = self.INIT_MAX_AGE
-        detections['tracking_id'][index] = self.DETECTIONS_STORES[index][0]
-        detections['is_matched'][index] = True
+        if index < len(detections['tracking_id']) and index < len(self.DETECTIONS_STORES):
+          detections['tracking_id'][index] = self.DETECTIONS_STORES[index][0]
+          detections['is_matched'][index] = True
 
         store_matched_flags[int(max_idx[index])] = True
         store_matched_detections[index] = True
@@ -364,7 +368,6 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-    print(f"Detection store :{self.DETECTIONS_STORES}")
     return detections if is_tracking else []
 
 

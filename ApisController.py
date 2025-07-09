@@ -123,11 +123,11 @@ def run_end_to_end_original(run_original, version_yolo, type_tracking, classific
             start_track = time.time()
             frame = cv2.imread(img)
             result_detection_tracking = handle_detection_tracking_process_original(img,frame, detectionModel, trackingModel,type_tracking)
-            #time_extract, result_facial_body_pose = handle_facial_body_process_original(frame, result_detection_tracking[2], facialModel, bodyPoseModel, type_tracking)
+            time_extract, result_facial_body_pose = handle_facial_body_process_original(frame, result_detection_tracking[2], facialModel, bodyPoseModel, type_tracking)
             person_processed += len(result_detection_tracking[2])
             total_time_detection += result_detection_tracking[0]
             total_time_tracking += result_detection_tracking[1]
-            #total_time_extract += time_extract
+            total_time_extract += time_extract
             # Xử lý tiếp classification
             # handle_classification(result_facial_body_pose, result_classification, model_classification)
 
@@ -249,9 +249,9 @@ def run_end_to_end_upgrade(run_original, version_yolo, type_tracking, classifica
 
             if len(trackingModel.DETECTIONS_STORES) > 0:
                 person_processed += len(trackingModel.DETECTIONS_STORES)
-                #time_extract, data_facial_body_pose = handle_facial_body_process_upgrade(frame, trackingModel.DETECTIONS_STORES,
-                #                                                          facialModel, bodyPoseModel,type_tracking)
-                #total_time_extract += time_extract
+                time_extract, data_facial_body_pose = handle_facial_body_process_upgrade(frame, trackingModel.DETECTIONS_STORES,
+                                                                          facialModel, bodyPoseModel,type_tracking)
+                total_time_extract += time_extract
                 #Xử lý tiếp classification
                 #handle_classification(data_facial_body_pose, result_classification, model_classification)
 

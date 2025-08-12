@@ -12,8 +12,8 @@ from tracker.deep_sort_real_time.deep_sort_real_time.deepsort_tracker import Dee
 sys.path.append(os.path.abspath("\\tracker\\strongsort\\strongsort"))
 from tracker.strongsort.strongsort.strong_sort import StrongSORT
 sys.path.append(os.path.abspath("\\detector_tracker\\ultralytics\\trackers"))
-# from detector_tracker.ultralytics.trackers.byte_tracker import BYTETracker
-# from detector_tracker.ultralytics.trackers.bot_sort import BOTSORT
+from detector_tracker.ultralytics.trackers.byte_tracker import BYTETracker
+
 import argparse
 import cv2
 import torch

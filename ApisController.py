@@ -1,8 +1,8 @@
 import os
 import cv2
-# import BodyPoseService as bps
+import BodyPoseService as bps
 import DetectorService as ds
-# import FacialService as fs
+import FacialService as fs
 import TrackingService as ts
 import pandas as pd
 import keras
@@ -23,7 +23,7 @@ def tlwh_to_xyxy(tlwh):
     return [x_min, y_min, x_max, y_max]
 
 def loadDataset():
-    pathRootDataset = "dataset\\Test2"
+    pathRootDataset = "dataset\\Test"
     imgs = []
     directionsData = os.listdir(pathRootDataset)
     for item in directionsData:
@@ -39,13 +39,15 @@ def classification(resultFacial,resultPoseBody, result_classification):
         count = (result >= 0.5).astype(int).flatten()
         result_classification.append(count[0])
 
-def handleOriginal(detectionModel, trackingModel, facialModel, bodyPoseMode, results, frame):
+def handleOriginal(detectionModel, trackingModel, 
+                    facialModel, bodyPoseMode, 
+                   results, frame):
     result_tracking = trackingModel.trackingDataObject(
         trackingModel.transformationDataInputTracking(results, frame))
     detection = trackingModel.transformationDataInputTracking(results, frame)['detections']
     return detection
-    #resultFacial = facialModel.extractionFacial(img=img)
-    #resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
+    # resultFacial = facialModel.extractionFacial(img=img)
+    # resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
     #classification(resultFacial,resultPoseBody)
 
 
@@ -59,22 +61,24 @@ def handleUpgrade(detectionModel, trackingModel, facialModel, bodyPoseMode, resu
     #resultPoseBody = bodyPoseModel.extractionBodyPose(img=img)
     #classification(resultFacial,resultPoseBody)
 
-def handlePipelineNotSkipDetection(isOriginal, type_model_tracking, detectionModel, trackingModel, facialModel, bodyPoseMode, img, total_time_tracking, total_time_classification, result_classification):
+def handlePipelineNotSkipDetection(isOriginal, type_model_tracking, detectionModel, trackingModel, 
+                                    facialModel, bodyPoseMode, 
+                                   img, total_time_tracking, total_time_classification, result_classification):
     start_track = time.time()
     frame = cv2.imread(img)
     results = detectionModel.predict(img)
     if isOriginal:
         detection = handleOriginal(detectionModel=detectionModel,
                        trackingModel=trackingModel,
-                       facialModel=facialModel,
-                       bodyPoseMode=bodyPoseMode,
+                        facialModel=facialModel,
+                        bodyPoseMode=bodyPoseMode,
                        results=results,
                        frame=frame)
     else:
         detection = handleUpgrade(detectionModel=detectionModel,
                       trackingModel=trackingModel,
-                      facialModel=facialModel,
-                      bodyPoseMode=bodyPoseMode,
+                       facialModel=facialModel,
+                       bodyPoseMode=bodyPoseMode,
                       results=results,
                       frame=frame)
     total_time_tracking += (time.time() - start_track)
@@ -94,7 +98,9 @@ def handlePipelineNotSkipDetection(isOriginal, type_model_tracking, detectionMod
     #classification(resultFacial,resultPoseBody,result_classification)
     total_time_classification += (time.time() - start_classification)
     return total_time_tracking, total_time_classification
-def handlePipelineSkipDetection(detectionModel, trackingModel, facialModel, bodyPoseMode, img, total_time_tracking, total_time_classification, result_classification):
+def handlePipelineSkipDetection(detectionModel, trackingModel, 
+                                # facialModel, bodyPoseMode, 
+                                img, total_time_tracking, total_time_classification, result_classification):
     start_track = time.time()
     frame = cv2.imread(img)
     dataTracking = trackingModel.DETECTIONS_STORES
@@ -115,8 +121,8 @@ def main(run_original = True):
     detectionModel = ds.DetectorService(os.path.join(os.getcwd(),"yolo11n.pt"), type_model_tracking)
     run_original = run_original
     trackingModel = ts.TrackingService(type_model_tracking, run_original)
-    facialModel = fs.FacialService()
-    bodyPoseModel = bps.BodyPoseService()
+    # facialModel = fs.FacialService()
+    # bodyPoseModel = bps.BodyPoseService()
 
     imgs = loadDataset()
     loop_test = 1
@@ -134,8 +140,8 @@ def main(run_original = True):
                                detectionModel=detectionModel,
                                type_model_tracking = 2,
                                trackingModel=trackingModel,
-                               facialModel=facialModel,
-                               bodyPoseMode=bodyPoseModel,
+                            #    facialModel=facialModel,
+                            #    bodyPoseMode=bodyPoseModel,
                                img=img,
                                total_time_tracking = total_time_tracking,
                                total_time_classification = total_time_classification,
@@ -146,8 +152,8 @@ def main(run_original = True):
                                    detectionModel = detectionModel,
                                    type_model_tracking =2,
                                    trackingModel = trackingModel,
-                                   facialModel = facialModel,
-                                   bodyPoseMode = bodyPoseModel,
+                                #    facialModel = facialModel,
+                                #    bodyPoseMode = bodyPoseModel,
                                    img = img,
                                    total_time_tracking = total_time_tracking,
                                    total_time_classification = total_time_classification,
@@ -156,8 +162,8 @@ def main(run_original = True):
                 else:
                     total_time_tracking,  total_time_classification = handlePipelineSkipDetection(detectionModel = detectionModel,
                                                 trackingModel=trackingModel,
-                                                facialModel=facialModel,
-                                                bodyPoseMode = bodyPoseModel,
+                                                # facialModel=facialModel,
+                                                # bodyPoseMode = bodyPoseModel,
                                                 img=img,
                                                 total_time_tracking = total_time_tracking,
                                                 total_time_classification = total_time_classification,

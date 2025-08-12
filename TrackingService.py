@@ -297,9 +297,12 @@ class TrackingService:
     un_mask = torch.ones(detections['embeds'].size(0), dtype=torch.bool)
 
     for index, embed in enumerate(detections['embeds']):
-      embed_tensor = torch.tensor(np.array(embed)).unsqueeze(0)
+      embed_tensor = torch.tensor(embed.detach().numpy()).unsqueeze(0)
       for idx, store in enumerate(self.DETECTIONS_STORES):
-        store_tensor = torch.tensor(np.array(store[2]), dtype=torch.float32).unsqueeze(0)
+        if isinstance(store[2], np.ndarray):
+          store_tensor = torch.tensor(np.array(store[2]), dtype=torch.float32).unsqueeze(0)
+        else:
+          store_tensor = torch.tensor(store[2].detach().numpy(), dtype=torch.float32).unsqueeze(0)
         if self.comparativeService.is_matched(embed_tensor,store_tensor):
           self.DETECTIONS_STORES[idx][2] = embed
           self.DETECTIONS_STORES[idx][1] = self.INIT_MAX_AGE
@@ -347,10 +350,11 @@ class TrackingService:
     max_iou, max_idx = torch.max(ious, dim=1)
     for index, max in enumerate(max_iou):
       if max >= self.MATCH_THRESHOLD:
-        self.DETECTIONS_STORES[int(max_idx[index])][0] = detections['detections_ts'][index]
+        self.DETECTIONS_STORES[int(max_idx[index])][2] = detections['detections_ts'][index]
         self.DETECTIONS_STORES[int(max_idx[index])][1] = self.INIT_MAX_AGE
-        detections['tracking_id'][index] = store_boxes[0]
-        detections['is_matched'][index] = True
+        if index < len(detections['tracking_id']) and index < len(self.DETECTIONS_STORES):
+          detections['tracking_id'][index] = self.DETECTIONS_STORES[index][0]
+          detections['is_matched'][index] = True
 
         store_matched_flags[int(max_idx[index])] = True
         store_matched_detections[index] = True
@@ -364,7 +368,6 @@ class TrackingService:
     self.DETECTIONS_STORES = [
       store for store in self.DETECTIONS_STORES if store[1] < self.MAX_AGE
     ]
-
     return detections if is_tracking else []
 
 
@@ -408,17 +411,7 @@ class TrackingService:
         trackings.append([track.track_id, track.features[0], track.to_tlwh()])
     return trackings
 
-  # self.DETECTIONS_STORES = tracking-id | track_buffer (=max_age) | bounding-box
-  # Bounding box | conf | tracking-id | is_matched
-  # coords.tolist() + [self.track_id, self.score, self.cls, self.idx]
-  # return {
-  #   "detections": detections,
-  #   "detections_ts": detections[0].boxes.xyxy,
-  #   "confidence": detections[0].conf,
-  #   "is_matched": [False] * len(detections),
-  #   "tracking_id": [0] * len(detections),
-  #   "frame": frame
-  # }
+
   def transformResultsTrackingByteTrack(self, resultsTracking, detections):
     trackings = []
     detection_map = {}

@@ -30,15 +30,12 @@ class BodyPoseService:
   ------
   Frame Data related Body pose
   """
-  def extractionBodyPose(self, frame, detection):
+  def extractionBodyPose(self, person):
     result_body = None
-    for detect in detection:
-      x1, y1, x2, y2 = detect
-      person = frame[int(y1):int(y2), int(x1):int(x2)]
-      dataBody = self.handleOpenPosePytorch(tp = self.model, frame = person)
-      if type(dataBody) == list:
-        dataBody = pd.DataFrame(dataBody)
-      result_body = pd.concat([result_body, dataBody], ignore_index=True)
+    dataBody = self.handleOpenPosePytorch(tp = self.model, frame = person)
+    if type(dataBody) == list:
+      dataBody = pd.DataFrame(dataBody)
+    result_body = pd.concat([result_body, dataBody], ignore_index=True)
     return result_body
 
   def calculate_angle(self,x1, y1, x2, y2):
@@ -48,7 +45,6 @@ class BodyPoseService:
     return angle_ba
 
   def handleOpenPosePytorch(self,tp , frame):
-    print("Handle body pose processing...")
     num_bf = 25
     start = time.time()
     flag_break = False
